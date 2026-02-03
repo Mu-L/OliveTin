@@ -16,7 +16,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/fzipp/gocyclo v0.6.0
 	github.com/go-critic/go-critic v0.14.3
-	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/jamesread/golure v0.0.0-20260104005024-ad0d6ec8c0ac
 	github.com/knadh/koanf/parsers/yaml v1.1.0
