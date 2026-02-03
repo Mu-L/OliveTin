@@ -364,7 +364,7 @@ function applyTheme() {
     if (themePreference.value && themePreference.value !== '') {
         themeStyle.textContent = `@import url('/custom-webui/themes/${themePreference.value}/theme.css') layer(theme);`
     } else {
-        themeStyle.textContent = ''
+        themeStyle.textContent = `@import url('/theme.css') layer(theme);`
     }
 }
 
