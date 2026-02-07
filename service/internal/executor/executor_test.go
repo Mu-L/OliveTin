@@ -74,7 +74,8 @@ func TestExecNonExistant(t *testing.T) {
 }
 
 func TestArgumentNameCamelCase(t *testing.T) {
-	a1 := &config.Action{
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
 		Title: "Do some tickles",
 		Shell: "echo 'Tickling {{ personName }}'",
 		Arguments: []config.ActionArgument{
@@ -85,18 +86,19 @@ func TestArgumentNameCamelCase(t *testing.T) {
 		},
 	}
 
-	values := map[string]string{
+	req.Arguments = map[string]string{
 		"personName": "Fred",
 	}
 
-	out, err := parseActionArguments(values, a1, nil)
+	out, err := parseActionArguments(req)
 
 	assert.Equal(t, "echo 'Tickling Fred'", out)
 	assert.Nil(t, err)
 }
 
 func TestArgumentNameSnakeCase(t *testing.T) {
-	a1 := &config.Action{
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
 		Title: "Do some tickles",
 		Shell: "echo 'Tickling {{ person_name }}'",
 		Arguments: []config.ActionArgument{
@@ -107,11 +109,11 @@ func TestArgumentNameSnakeCase(t *testing.T) {
 		},
 	}
 
-	values := map[string]string{
+	req.Arguments = map[string]string{
 		"person_name": "Fred",
 	}
 
-	out, err := parseActionArguments(values, a1, nil)
+	out, err := parseActionArguments(req)
 
 	assert.Equal(t, "echo 'Tickling Fred'", out)
 	assert.Nil(t, err)
@@ -205,7 +207,8 @@ func TestGetPagingIndexes(t *testing.T) {
 }
 
 func TestUnsetRequiredArgument(t *testing.T) {
-	a1 := &config.Action{
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
 		Title: "Print your name",
 		Shell: "echo 'Your name is: {{ name }}'",
 		Arguments: []config.ActionArgument{
@@ -216,16 +219,17 @@ func TestUnsetRequiredArgument(t *testing.T) {
 		},
 	}
 
-	values := map[string]string{}
+	req.Arguments = map[string]string{}
 
-	out, err := parseActionArguments(values, a1, nil)
+	out, err := parseActionArguments(req)
 
 	assert.Equal(t, "", out)
 	assert.NotNil(t, err)
 }
 
 func TestUnusedArgumentStillPassesTypeSafetyCheck(t *testing.T) {
-	a1 := &config.Action{
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
 		Title: "Print your name",
 		Shell: "echo 'Your name is: {{ name }}'",
 		Arguments: []config.ActionArgument{
@@ -240,12 +244,12 @@ func TestUnusedArgumentStillPassesTypeSafetyCheck(t *testing.T) {
 		},
 	}
 
-	values := map[string]string{
+	req.Arguments = map[string]string{
 		"name": "Fred",
 		"age":  "Not an integer",
 	}
 
-	out, err := parseActionArguments(values, a1, nil)
+	out, err := parseActionArguments(req)
 
 	assert.Equal(t, "", out)
 	assert.NotNil(t, err)

@@ -237,7 +237,7 @@ func buildDashboardComponentSimpleWithEntity(subitem *config.DashboardComponent,
 
 	title := subitem.Title
 	if entity != nil {
-		title = tpl.ParseTemplateWith(subitem.Title, entity)
+		title = tpl.ParseTemplateOfActionBeforeExec(subitem.Title, entity)
 	}
 
 	newitem := &apiv1.DashboardComponent{

@@ -67,7 +67,7 @@ func evaluateEnabledExpression(action *config.Action, entity *entities.Entity) b
 		return true
 	}
 
-	result := tpl.ParseTemplateWith(action.EnabledExpression, entity)
+	result := tpl.ParseTemplateOfActionBeforeExec(action.EnabledExpression, entity)
 	result = strings.TrimSpace(result)
 
 	if result == "" {
@@ -106,11 +106,11 @@ func evaluateResultValue(result string) bool {
 	return false
 }
 
-func getDefaultValue(cfgArg config.ActionArgument, entity *entities.Entity) string {
+func getDefaultArgumentValue(cfgArg config.ActionArgument, entity *entities.Entity) string {
 	defaultValue := cfgArg.Default
 
 	if defaultValue != "" {
-		defaultValue = tpl.ParseTemplateWith(defaultValue, entity)
+		defaultValue = tpl.ParseTemplateOfActionBeforeExec(defaultValue, entity)
 	}
 
 	return defaultValue
@@ -131,8 +131,8 @@ func buildAction(actionBinding *executor.ActionBinding, rr *DashboardRenderReque
 
 	btn := apiv1.Action{
 		BindingId:                actionBinding.ID,
-		Title:                    tpl.ParseTemplateWith(action.Title, actionBinding.Entity),
-		Icon:                     tpl.ParseTemplateWith(action.Icon, actionBinding.Entity),
+		Title:                    tpl.ParseTemplateOfActionBeforeExec(action.Title, actionBinding.Entity),
+		Icon:                     tpl.ParseTemplateOfActionBeforeExec(action.Icon, actionBinding.Entity),
 		CanExec:                  aclCanExec && enabledExprCanExec,
 		PopupOnStart:             action.PopupOnStart,
 		Order:                    int32(actionBinding.ConfigOrder),
@@ -146,7 +146,7 @@ func buildAction(actionBinding *executor.ActionBinding, rr *DashboardRenderReque
 			Title:                 cfgArg.Title,
 			Type:                  cfgArg.Type,
 			Description:           cfgArg.Description,
-			DefaultValue:          getDefaultValue(cfgArg, actionBinding.Entity),
+			DefaultValue:          getDefaultArgumentValue(cfgArg, actionBinding.Entity),
 			Choices:               buildChoices(cfgArg),
 			Suggestions:           cfgArg.Suggestions,
 			SuggestionsBrowserKey: cfgArg.SuggestionsBrowserKey,
@@ -173,8 +173,8 @@ func buildChoicesEntity(firstChoice config.ActionArgumentChoice, entityTitle str
 
 	for _, ent := range entList {
 		ret = append(ret, &apiv1.ActionArgumentChoice{
-			Value: tpl.ParseTemplateWith(firstChoice.Value, ent),
-			Title: tpl.ParseTemplateWith(firstChoice.Title, ent),
+			Value: tpl.ParseTemplateOfActionBeforeExec(firstChoice.Value, ent),
+			Title: tpl.ParseTemplateOfActionBeforeExec(firstChoice.Title, ent),
 		})
 	}
 

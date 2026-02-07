@@ -25,29 +25,12 @@ var (
 	}
 )
 
-func parseCommandForReplacements(shellCommand string, values map[string]string, entity any) (string, error) {
-	r := regexp.MustCompile(`{{ *?([a-zA-Z0-9_]+?) *?}}`)
-	foundArgumentNames := r.FindAllStringSubmatch(shellCommand, -1)
-
-	for _, match := range foundArgumentNames {
-		argName := match[1]
-		argValue, argProvided := values[argName]
-
-		if !argProvided {
-			return "", fmt.Errorf("required arg not provided: %v", argName)
-		}
-
-		shellCommand = strings.ReplaceAll(shellCommand, match[0], argValue)
-	}
-
-	return shellCommand, nil
-}
-
 // parseExecArray parses all exec arguments in the action.
 func parseExecArray(action *config.Action, values map[string]string, entity *entities.Entity) ([]string, error) {
 	parsed := make([]string, len(action.Exec))
-	for i, a := range action.Exec {
-		out, err := parseSingleExec(a, values, entity)
+
+	for i, segment := range action.Exec {
+		out, err := parseExecSegment(segment, values, entity)
 		if err != nil {
 			return nil, err
 		}
@@ -63,20 +46,19 @@ func parseActionExec(values map[string]string, action *config.Action, entity *en
 	if err := validateArguments(values, action); err != nil {
 		return nil, err
 	}
+
 	parsed, err := parseExecArray(action, values, entity)
+
 	if err != nil {
 		return nil, err
 	}
+
 	logParsedExec(action, parsed, values)
 	return parsed, nil
 }
 
-func parseSingleExec(a string, values map[string]string, entity *entities.Entity) (string, error) {
-	arg, err := parseCommandForReplacements(a, values, entity)
-	if err != nil {
-		return "", err
-	}
-	return tpl.ParseTemplateWithArgs(arg, entity, values), nil
+func parseExecSegment(arg string, values map[string]string, entity *entities.Entity) (string, error) {
+	return tpl.ParseTemplateWithActionContext(arg, entity, values)
 }
 
 func validateArguments(values map[string]string, action *config.Action) error {
@@ -94,19 +76,17 @@ func logParsedExec(action *config.Action, parsed []string, values map[string]str
 	log.WithFields(log.Fields{"actionTitle": action.Title, "cmd": redacted}).Infof("Action parse args - After (Exec)")
 }
 
-func parseActionArguments(values map[string]string, action *config.Action, entity *entities.Entity) (string, error) {
+func parseActionArguments(req *ExecutionRequest) (string, error) {
 	log.WithFields(log.Fields{
-		"actionTitle": action.Title,
-		"cmd":         action.Shell,
+		"actionTitle": req.Binding.Action.Title,
+		"cmd":         req.Binding.Action.Shell,
 	}).Infof("Action parse args - Before")
 
-	rawShellCommand, err := parseCommandForReplacements(action.Shell, values, entity)
-
-	for _, arg := range action.Arguments {
+	for _, arg := range req.Binding.Action.Arguments {
 		argName := arg.Name
-		argValue := values[argName]
+		argValue := req.Arguments[argName]
 
-		err := typecheckActionArgument(&arg, argValue, action)
+		err := typecheckActionArgument(&arg, argValue, req.Binding.Action)
 
 		if err != nil {
 			return "", err
@@ -118,15 +98,16 @@ func parseActionArguments(values map[string]string, action *config.Action, entit
 		}).Debugf("Arg assigned")
 	}
 
-	parsedShellCommand := tpl.ParseTemplateWithArgs(rawShellCommand, entity, values)
-	redactedShellCommand := redactShellCommand(parsedShellCommand, action.Arguments, values)
+	parsedShellCommand, err := tpl.ParseTemplateWithActionContext(req.Binding.Action.Shell, req.Binding.Entity, req.Arguments)
 
 	if err != nil {
 		return "", err
 	}
 
+	redactedShellCommand := redactShellCommand(parsedShellCommand, req.Binding.Action.Arguments, req.Arguments)
+
 	log.WithFields(log.Fields{
-		"actionTitle": action.Title,
+		"actionTitle": req.Binding.Action.Title,
 		"cmd":         redactedShellCommand,
 	}).Infof("Action parse args - After")
 
@@ -173,7 +154,7 @@ func typecheckActionArgument(arg *config.ActionArgument, value string, action *c
 		return fmt.Errorf("argument name cannot be empty")
 	}
 
-	return typecheckActionArgumentFound(value, action, arg)
+	return typecheckActionArgumentFound(value, arg)
 }
 
 // ValidateArgument validates a single argument value using the same logic as the executor.
@@ -195,7 +176,7 @@ func ValidateArgument(arg *config.ActionArgument, value string, action *config.A
 	return typecheckActionArgument(arg, mangledValue, action)
 }
 
-func typecheckActionArgumentFound(value string, action *config.Action, arg *config.ActionArgument) error {
+func typecheckActionArgumentFound(value string, arg *config.ActionArgument) error {
 	if value == "" {
 		return typecheckNull(arg)
 	}
@@ -257,7 +238,7 @@ func typecheckChoiceEntity(value string, arg *config.ActionArgument) error {
 	templateChoice := arg.Choices[0].Value
 
 	for _, ent := range entities.GetEntityInstances(arg.Entity) {
-		choice := tpl.ParseTemplateWith(templateChoice, ent)
+		choice := tpl.ParseTemplateOfActionBeforeExec(templateChoice, ent)
 
 		if value == choice {
 			return nil
