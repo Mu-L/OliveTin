@@ -6,6 +6,7 @@ import (
 
 	config "github.com/OliveTin/OliveTin/internal/config"
 	"github.com/OliveTin/OliveTin/internal/entities"
+	"github.com/OliveTin/OliveTin/internal/tpl"
 	log "github.com/sirupsen/logrus"
 
 	"testing"
@@ -114,36 +115,47 @@ func TestValidateArgumentCheckboxWithChoices(t *testing.T) {
 	assert.NotNil(t, err, "Expected unknown checkbox title to be rejected against choices")
 }
 
+func newExecRequest() *ExecutionRequest {
+	return &ExecutionRequest{
+		Arguments: make(map[string]string),
+		Binding: &ActionBinding{
+			Action: &config.Action{},
+		},
+	}
+}
+
 func TestArgumentValueNullable(t *testing.T) {
-	a1 := config.Action{
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
 		Title: "Release the hounds",
 		Shell: "echo 'Releasing {{ count }} hounds'",
 		Arguments: []config.ActionArgument{
 			{
-				Name: "count",
-				Type: "int",
+				Name:       "count",
+				Type:       "int",
+				RejectNull: false,
 			},
 		},
 	}
-
-	values := map[string]string{
+	req.Arguments = map[string]string{
 		"count": "",
 	}
 
-	out, err := parseActionArguments(values, &a1, nil)
+	out, err := parseActionArguments(req)
 
 	assert.Equal(t, "echo 'Releasing  hounds'", out)
 	assert.Nil(t, err)
 
-	a1.Arguments[0].RejectNull = true
+	req.Binding.Action.Arguments[0].RejectNull = true
 
-	_, err = parseActionArguments(values, &a1, nil)
+	_, err = parseActionArguments(req)
 
 	assert.NotNil(t, err)
 }
 
 func TestArgumentNameNumbers(t *testing.T) {
-	a1 := config.Action{
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
 		Title: "Do some tickles",
 		Shell: "echo 'Tickling {{ person1name }}'",
 		Arguments: []config.ActionArgument{
@@ -154,18 +166,19 @@ func TestArgumentNameNumbers(t *testing.T) {
 		},
 	}
 
-	values := map[string]string{
+	req.Arguments = map[string]string{
 		"person1name": "Fred",
 	}
 
-	out, err := parseActionArguments(values, &a1, nil)
+	out, err := parseActionArguments(req)
 
 	assert.Equal(t, "echo 'Tickling Fred'", out)
 	assert.Nil(t, err)
 }
 
 func TestArgumentNotProvided(t *testing.T) {
-	a1 := config.Action{
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
 		Title: "Do some tickles",
 		Shell: "echo 'Tickling {{ personName }}'",
 		Arguments: []config.ActionArgument{
@@ -176,24 +189,25 @@ func TestArgumentNotProvided(t *testing.T) {
 		},
 	}
 
-	values := map[string]string{}
+	req.Arguments = map[string]string{}
 
-	out, err := parseActionArguments(values, &a1, nil)
+	out, err := parseActionArguments(req)
 
 	assert.Equal(t, "", out)
 	assert.Equal(t, err.Error(), "required arg not provided: personName")
 }
 
 func TestExecArrayParsing(t *testing.T) {
-	a1 := config.Action{
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
 		Title:     "List files",
 		Exec:      []string{"ls", "-alh"},
 		Arguments: []config.ActionArgument{},
 	}
 
-	values := map[string]string{}
+	req.Arguments = map[string]string{}
 
-	out, err := parseActionExec(values, &a1, nil)
+	out, err := parseActionExec(req.Arguments, req.Binding.Action, req.Binding.Entity)
 
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"ls", "-alh"}, out)
@@ -636,7 +650,7 @@ func TestParseCommandForReplacements(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			output, err := parseCommandForReplacements(tt.shellCommand, tt.values, nil)
+			output, err := tpl.ParseTemplateWithActionContext(tt.shellCommand, nil, tt.values)
 
 			if tt.expectError {
 				assert.NotNil(t, err, "Expected error but got none")
@@ -654,56 +668,87 @@ func TestParseCommandForReplacements(t *testing.T) {
 func TestArgumentChoicesValidation(t *testing.T) {
 	tests := []struct {
 		name        string
-		action      config.Action
-		values      map[string]string
+		req         *ExecutionRequest
 		expectError bool
 		description string
 	}{
 		{
 			name: "Valid choice",
-			action: config.Action{
-				Title: "Test choices",
-				Shell: "echo {{ option }}",
-				Arguments: []config.ActionArgument{
-					{
-						Name: "option",
-						Type: "ascii",
-						Choices: []config.ActionArgumentChoice{
-							{Value: "option1", Title: "Option 1"},
-							{Value: "option2", Title: "Option 2"},
+			req: &ExecutionRequest{
+				Binding: &ActionBinding{
+					Action: &config.Action{
+						Title: "Test choices",
+						Shell: "echo {{ option }}",
+						Arguments: []config.ActionArgument{
+							{
+								Name: "option",
+								Type: "ascii",
+								Choices: []config.ActionArgumentChoice{
+									{Value: "option1", Title: "Option 1"},
+									{Value: "option2", Title: "Option 2"},
+								},
+							},
 						},
 					},
 				},
+				Arguments: map[string]string{"option": "option1"},
 			},
-			values:      map[string]string{"option": "option1"},
 			expectError: false,
 			description: "Should accept valid choice",
 		},
 		{
 			name: "Invalid choice",
-			action: config.Action{
-				Title: "Test choices",
-				Shell: "echo {{ option }}",
-				Arguments: []config.ActionArgument{
-					{
-						Name: "option",
-						Type: "ascii",
-						Choices: []config.ActionArgumentChoice{
-							{Value: "option1", Title: "Option 1"},
-							{Value: "option2", Title: "Option 2"},
+			req: &ExecutionRequest{
+				Binding: &ActionBinding{
+					Action: &config.Action{
+						Title: "Test choices",
+						Shell: "echo {{ option }}",
+						Arguments: []config.ActionArgument{
+							{
+								Name: "option",
+								Type: "ascii",
+								Choices: []config.ActionArgumentChoice{
+									{Value: "option1", Title: "Option 1"},
+									{Value: "option2", Title: "Option 2"},
+								},
+							},
 						},
 					},
 				},
+				Arguments: map[string]string{"option": "invalid_option"},
 			},
-			values:      map[string]string{"option": "invalid_option"},
 			expectError: true,
 			description: "Should reject invalid choice",
+		},
+		{
+			name: "Invalid choice",
+			req: &ExecutionRequest{
+				Binding: &ActionBinding{
+					Action: &config.Action{
+						Title: "Test choices",
+						Shell: "echo {{ option }}",
+						Arguments: []config.ActionArgument{
+							{
+								Name: "option",
+								Type: "ascii",
+								Choices: []config.ActionArgumentChoice{
+									{Value: "option1", Title: "Option 1"},
+									{Value: "option2", Title: "Option 2"},
+								},
+							},
+						},
+					},
+				},
+				Arguments: map[string]string{"option": "option1"},
+			},
+			expectError: false,
+			description: "Should accept valid choice",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := parseActionArguments(tt.values, &tt.action, nil)
+			_, err := parseActionArguments(tt.req)
 
 			if tt.expectError {
 				assert.NotNil(t, err, tt.description)
@@ -737,7 +782,8 @@ func TestTypeSafetyCheckVeryDangerousRawString(t *testing.T) {
 }
 
 func TestParseActionArgumentsWithEntityPrefix(t *testing.T) {
-	action := config.Action{
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
 		Title: "Test entity prefix",
 		Shell: "echo 'Processing {{ name }} for entity'",
 		Arguments: []config.ActionArgument{
@@ -745,16 +791,16 @@ func TestParseActionArgumentsWithEntityPrefix(t *testing.T) {
 		},
 	}
 
-	values := map[string]string{
+	req.Arguments = map[string]string{
 		"name": "testuser",
 	}
 
-	ent := &entities.Entity{
+	req.Binding.Entity = &entities.Entity{
 		Title: "entity_123",
 	}
 
 	// Test with entity prefix
-	output, err := parseActionArguments(values, &action, ent)
+	output, err := parseActionArguments(req)
 	assert.Nil(t, err)
 	assert.Contains(t, output, "testuser")
 }

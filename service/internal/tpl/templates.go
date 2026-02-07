@@ -19,8 +19,8 @@ type olivetinInfo struct {
 	Runtime *installationinfo.RuntimeInfo
 }
 
-var legacyArgumentRegex = regexp.MustCompile(`{{ ([a-zA-Z0-9_]+) }}`)
-var legacyEntityPropertiesRegex = regexp.MustCompile(`{{ ([a-zA-Z0-9_]+)\.([a-zA-Z0-9_\.]+) }}`)
+var legacyArgumentRegex = regexp.MustCompile(`{{\s*([a-zA-Z0-9_]+)\s*}}`)
+var legacyEntityPropertiesRegex = regexp.MustCompile(`{{\s*([a-zA-Z0-9_]+)\.([a-zA-Z0-9_\.]+)\s*}}`)
 
 type generalTemplateContext struct {
 	OliveTin olivetinInfo
@@ -106,39 +106,32 @@ func migrateLegacyEntityProperties(rawShellCommand string) string {
 }
 
 func migrateLegacyArgumentNames(rawShellCommand string) string {
-	foundArgumentNames := legacyArgumentRegex.FindAllStringSubmatch(rawShellCommand, -1)
+	matches := legacyArgumentRegex.FindAllStringSubmatchIndex(rawShellCommand, -1)
 
-	for _, match := range foundArgumentNames {
-		argName := match[1]
+	for i := len(matches) - 1; i >= 0; i-- {
+		match := matches[i]
+		fullMatchStart := match[0]
+		fullMatchEnd := match[1]
+		argNameStart := match[2]
+		argNameEnd := match[3]
 
-		if !strings.HasPrefix(argName, ".Arguments.") {
-			log.WithFields(log.Fields{
-				"old": argName,
-				"new": ".Arguments." + argName,
-			}).Debugf("Legacy variable name found, changing to Argument")
+		argName := rawShellCommand[argNameStart:argNameEnd]
 
-			rawShellCommand = strings.ReplaceAll(rawShellCommand, argName, ".Arguments."+argName)
-		}
+		log.WithFields(log.Fields{
+			"old": argName,
+			"new": ".Arguments." + argName,
+		}).Debugf("Legacy variable name found, changing to Argument")
+
+		replacement := "{{ .Arguments." + argName + " }}"
+		rawShellCommand = rawShellCommand[:fullMatchStart] + replacement + rawShellCommand[fullMatchEnd:]
 	}
 
 	return rawShellCommand
 }
 
-func ParseTemplateWithArgs(source string, ent *entities.Entity, args map[string]string) string {
+func ParseTemplateWithActionContext(source string, ent *entities.Entity, args map[string]string) (string, error) {
 	source = migrateLegacyArgumentNames(source)
 	source = migrateLegacyEntityProperties(source)
-
-	ret := ""
-
-	t, err := tpl.Parse(source)
-
-	if err != nil {
-		log.WithFields(log.Fields{
-			"source": source,
-			"err":    err,
-		}).Error("Error parsing template")
-		return fmt.Sprintf("tpl parse error: %v", err.Error())
-	}
 
 	var entdata any
 
@@ -154,31 +147,73 @@ func ParseTemplateWithArgs(source string, ent *entities.Entity, args map[string]
 		CurrentEntity: entdata,
 	}
 
+	result, err := parseTemplate(source, templateVariables)
+
+	if isMissingArgumentError, argName := checkMissingArgumentError(err); isMissingArgumentError {
+		return "", fmt.Errorf("required arg not provided: %s", argName)
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
+}
+
+func checkMissingArgumentError(err error) (bool, string) {
+	if err == nil {
+		return false, ""
+	}
+
+	if strings.Contains(err.Error(), "map has no entry for key") {
+		re := regexp.MustCompile(`\.Arguments\.(\w+)`)
+		match := re.FindStringSubmatch(err.Error())
+		if len(match) > 1 {
+			return true, match[1]
+		}
+	}
+
+	return false, ""
+}
+
+func parseTemplate(source string, data any) (string, error) {
+	t, err := tpl.Parse(source)
+
+	if err != nil {
+		return "", err
+	}
+
+	t = t.Option("missingkey=error")
+
 	var sb strings.Builder
-	err = t.Execute(&sb, &templateVariables)
+	err = t.Execute(&sb, data)
 
 	if err != nil {
 		log.WithFields(log.Fields{
-			"source":        source,
-			"err":           err,
-			"currentEntity": ent,
+			"source": source,
+			"err":    err,
 		}).Errorf("Error executing template")
-		ret = fmt.Sprintf("tpl exec error: %v", err.Error())
+
+		return "", err
 	} else {
-		ret = sb.String()
+		return sb.String(), nil
 	}
-
-	return ret
 }
 
-func ParseTemplateWith(source string, ent *entities.Entity) string {
-	return ParseTemplateWithArgs(source, ent, nil)
+func ParseTemplateOfActionBeforeExec(source string, ent *entities.Entity) string {
+	result, err := ParseTemplateWithActionContext(source, ent, nil)
+	if err != nil {
+		return ""
+	}
+	return result
 }
 
+/*
 func ParseTemplateBoolWith(source string, ent *entities.Entity) bool {
 	source = strings.TrimSpace(source)
 
-	tplBool := ParseTemplateWith(source, ent)
+	tplBool := ParseTemplateOfActionBeforeExec(source, ent)
 
 	return tplBool == "true"
 }
+*/
