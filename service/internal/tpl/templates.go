@@ -12,7 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var tpl = template.New("tpl")
+var tpl = template.New("tpl").
+	Option("missingkey=error")
 
 type olivetinInfo struct {
 	Build   *installationinfo.BuildInfo
@@ -183,8 +184,6 @@ func parseTemplate(source string, data any) (string, error) {
 		return "", err
 	}
 
-	t = t.Option("missingkey=error")
-
 	var sb strings.Builder
 	err = t.Execute(&sb, data)
 
@@ -203,6 +202,10 @@ func parseTemplate(source string, data any) (string, error) {
 func ParseTemplateOfActionBeforeExec(source string, ent *entities.Entity) string {
 	result, err := ParseTemplateWithActionContext(source, ent, nil)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"source": source,
+			"err":    err,
+		}).Errorf("Error parsing template of action before exec")
 		return ""
 	}
 	return result
