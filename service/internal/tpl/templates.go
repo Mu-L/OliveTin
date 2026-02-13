@@ -2,12 +2,12 @@ package tpl
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"text/template"
 
 	"github.com/OliveTin/OliveTin/internal/entities"
+	"github.com/OliveTin/OliveTin/internal/env"
 	"github.com/OliveTin/OliveTin/internal/installationinfo"
 	log "github.com/sirupsen/logrus"
 )
@@ -49,7 +49,7 @@ func init() {
 		Runtime: installationinfo.Runtime,
 	}
 
-	cachedEnvMap = buildEnvMap()
+	cachedEnvMap = env.BuildEnvMap()
 }
 
 func GetNewGeneralTemplateContext() *generalTemplateContext {
@@ -57,18 +57,6 @@ func GetNewGeneralTemplateContext() *generalTemplateContext {
 		OliveTin: cachedOliveTinInfo,
 		Env:      cachedEnvMap,
 	}
-}
-
-func buildEnvMap() map[string]string {
-	envMap := make(map[string]string)
-	for _, env := range os.Environ() {
-		parts := strings.SplitN(env, "=", 2)
-		if len(parts) == 2 {
-			envMap[parts[0]] = parts[1]
-		}
-	}
-
-	return envMap
 }
 
 func migrateLegacyEntityProperties(rawShellCommand string) string {
