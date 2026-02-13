@@ -7,6 +7,9 @@ listenAddressSingleHTTPFrontend: 0.0.0.0:1337
 logLevel: "DEBUG"
 checkForUpdates: false
 
+# Custom theme used to verify theme CSS applies to cssClass (e.g. action button background)
+themeName: cssclass-theme
+
 actions: []
 
 dashboards:

@@ -29,6 +29,17 @@ describe('config: cssClass', function () {
     expect(classAttr).to.include('test-custom-class')
   })
 
+  it('custom theme applies background color to action button via cssClass', async function () {
+    await getRootAndWait()
+
+    const buttonWithClass = await webdriver.findElements(By.css('.action-button button.test-custom-class'))
+    expect(buttonWithClass).to.have.length.at.least(1, 'Action button with test-custom-class should exist')
+
+    const bgColor = await buttonWithClass[0].getCssValue('background-color')
+    expect(bgColor, 'Theme theme.css should set .action-button button.test-custom-class background to rgb(32, 64, 128)')
+      .to.match(/rgba?\(\s*32\s*,\s*64\s*,\s*128\s*(,\s*1)?\s*\)/)
+  })
+
   it('cssClass override: style rule targeting custom class wins over component styles', async function () {
     await getRootAndWait()
 
