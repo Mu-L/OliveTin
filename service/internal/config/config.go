@@ -128,6 +128,7 @@ type Config struct {
 	ShowFooter                      bool                       `koanf:"showFooter"`
 	ShowNavigation                  bool                       `koanf:"showNavigation"`
 	ShowNewVersions                 bool                       `koanf:"showNewVersions"`
+	ShowNavigateOnStartIcons        bool                       `koanf:"showNavigateOnStartIcons"`
 	EnableCustomJs                  bool                       `koanf:"enableCustomJs"`
 	AuthJwtCookieName               string                     `koanf:"authJwtCookieName"`
 	AuthJwtHeader                   string                     `koanf:"authJwtHeader"`
@@ -170,7 +171,8 @@ type Config struct {
 	BannerCSS                       string                     `koanf:"bannerCss"`
 	Include                         string                     `koanf:"include"`
 
-	sourceFiles []string
+	sourceFiles            []string
+	passwordTemplateParser func(string, interface{}) string
 }
 
 type AuthLocalUsersConfig struct {
@@ -244,6 +246,7 @@ func DefaultConfigWithBasePort(basePort int) *Config {
 	config.ShowFooter = true
 	config.ShowNavigation = true
 	config.ShowNewVersions = true
+	config.ShowNavigateOnStartIcons = true
 	config.EnableCustomJs = false
 	config.ExternalRestAddress = "."
 	config.LogLevel = "INFO"
