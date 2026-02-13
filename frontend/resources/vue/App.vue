@@ -361,10 +361,12 @@ function applyTheme() {
         document.head.appendChild(themeStyle)
     }
 
+    // Load theme into @layer theme so it takes precedence over @layer components (theme is
+    // last in style.css layer order). Fixes #804 regression after beta.2.
     if (themePreference.value && themePreference.value !== '') {
-        themeStyle.textContent = `@import url('/custom-webui/themes/${themePreference.value}/theme.css') layer(theme);`
+        themeStyle.textContent = `@layer theme { @import url('/custom-webui/themes/${themePreference.value}/theme.css'); }`
     } else {
-        themeStyle.textContent = `@import url('/theme.css') layer(theme);`
+        themeStyle.textContent = `@layer theme { @import url('/theme.css'); }`
     }
 }
 
