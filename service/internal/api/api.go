@@ -27,6 +27,7 @@ import (
 	entities "github.com/OliveTin/OliveTin/internal/entities"
 	executor "github.com/OliveTin/OliveTin/internal/executor"
 	installationinfo "github.com/OliveTin/OliveTin/internal/installationinfo"
+	"github.com/OliveTin/OliveTin/internal/tpl"
 	connectproto "go.akshayshah.org/connectproto"
 )
 
@@ -307,11 +308,11 @@ func (api *oliveTinAPI) internalLogEntryToPb(logEntry *executor.InternalLogEntry
 		ExecutionStarted:         logEntry.ExecutionStarted,
 		ExecutionFinished:        logEntry.ExecutionFinished,
 		User:                     logEntry.Username,
-		BindingId:                logEntry.Binding.ID,
+		BindingId:                logEntry.GetBindingId(),
 		DatetimeRateLimitExpires: calculateRateLimitExpires(api, logEntry),
 	}
 
-	if !pble.ExecutionFinished {
+	if !pble.ExecutionFinished && logEntry.Binding != nil && logEntry.Binding.Action != nil {
 		pble.CanKill = acl.IsAllowedKill(api.cfg, authenticatedUser, logEntry.Binding.Action)
 	}
 
@@ -709,8 +710,12 @@ func (api *oliveTinAPI) DumpVars(ctx ctx.Context, req *connect.Request[apiv1.Dum
 		return connect.NewResponse(res), nil
 	}
 
-	jsonstring, _ := json.MarshalIndent(entities.GetAll(), "", "  ")
-	fmt.Printf("%s", &jsonstring)
+	jsonstring, err := json.MarshalIndent(tpl.GetNewGeneralTemplateContext(), "", "  ")
+	if err != nil {
+		log.WithError(err).Error("DumpVars: failed to marshal template context from GetNewGeneralTemplateContext")
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("dump vars: marshal template context: %w", err))
+	}
+	fmt.Printf("%s", jsonstring)
 
 	res.Alert = "Dumping variables has been enabled in the configuration. Please set InsecureAllowDumpVars = false again after you don't need it anymore"
 
@@ -905,6 +910,7 @@ func (api *oliveTinAPI) Init(ctx ctx.Context, req *connect.Request[apiv1.InitReq
 		ShowLogList:               user.EffectivePolicy.ShowLogList,
 		LoginRequired:             loginRequired,
 		AvailableThemes:           discoverAvailableThemes(api.cfg),
+		ShowNavigateOnStartIcons:  api.cfg.ShowNavigateOnStartIcons,
 	}
 
 	return connect.NewResponse(res), nil

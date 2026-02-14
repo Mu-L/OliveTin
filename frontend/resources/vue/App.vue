@@ -361,6 +361,7 @@ function applyTheme() {
         document.head.appendChild(themeStyle)
     }
 
+    // Load theme into @layer theme so it takes precedence over @layer components
     if (themePreference.value && themePreference.value !== '') {
         themeStyle.textContent = `@import url('/custom-webui/themes/${themePreference.value}/theme.css') layer(theme);`
     } else {

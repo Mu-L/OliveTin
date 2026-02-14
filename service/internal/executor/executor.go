@@ -6,6 +6,7 @@ import (
 	authpublic "github.com/OliveTin/OliveTin/internal/auth/authpublic"
 	config "github.com/OliveTin/OliveTin/internal/config"
 	"github.com/OliveTin/OliveTin/internal/entities"
+	"github.com/OliveTin/OliveTin/internal/tpl"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
@@ -109,6 +110,15 @@ type InternalLogEntry struct {
 	*/
 	ActionTitle string
 	ActionIcon  string
+}
+
+// .Binding can be nil, so we need to handle that.
+func (e *InternalLogEntry) GetBindingId() string {
+	if e.Binding == nil {
+		return ""
+	}
+
+	return e.Binding.ID
 }
 
 type executorStepFunc func(*ExecutionRequest) bool
@@ -680,7 +690,7 @@ func handleShellBranch(req *ExecutionRequest) bool {
 		return fail(req, err)
 	}
 
-	cmd, err := parseActionArguments(req.Arguments, req.Binding.Action, req.Binding.Entity)
+	cmd, err := parseActionArguments(req)
 
 	if err != nil {
 		return fail(req, err)
@@ -728,7 +738,7 @@ func stepRequestAction(req *ExecutionRequest) bool {
 
 	req.logEntry.Binding = req.Binding
 	req.logEntry.ActionConfigTitle = req.Binding.Action.Title
-	req.logEntry.ActionTitle = entities.ParseTemplateWith(req.Binding.Action.Title, req.Binding.Entity)
+	req.logEntry.ActionTitle = tpl.ParseTemplateOfActionBeforeExec(req.Binding.Action.Title, req.Binding.Entity)
 	req.logEntry.ActionIcon = req.Binding.Action.Icon
 	req.logEntry.Tags = req.Tags
 
@@ -893,7 +903,7 @@ func stepExecAfter(req *ExecutionRequest) bool {
 		"ot_username":            req.AuthenticatedUser.Username,
 	}
 
-	finalParsedCommand, err := parseCommandForReplacements(req.Binding.Action.ShellAfterCompleted, args, req.Binding.Entity)
+	finalParsedCommand, err := tpl.ParseTemplateWithActionContext(req.Binding.Action.ShellAfterCompleted, req.Binding.Entity, args)
 
 	if err != nil {
 		msg := "Could not prepare shellAfterCompleted command: " + err.Error() + "\n"

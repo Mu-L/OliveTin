@@ -2,7 +2,9 @@ package config
 
 import (
 	"strings"
+	"text/template"
 
+	"github.com/OliveTin/OliveTin/internal/env"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
@@ -13,6 +15,7 @@ func (cfg *Config) Sanitize() {
 	cfg.sanitizeLogLevel()
 	cfg.sanitizeAuthRequireGuestsToLogin()
 	cfg.sanitizeLogHistoryPageSize()
+	cfg.sanitizeLocalUserPasswords()
 
 	// log.Infof("cfg %p", cfg)
 
@@ -170,6 +173,29 @@ func (cfg *Config) sanitizeLogHistoryPageSize() {
 	} else if cfg.LogHistoryPageSize > 100 {
 		log.Warnf("LogsHistoryLimit is high, you can do this, but expect browser lag.")
 	}
+}
+
+func (cfg *Config) sanitizeLocalUserPasswords() {
+	for _, user := range cfg.AuthLocalUsers.Users {
+		if user.Password != "" {
+			user.Password = parsePasswordTemplate(user.Password)
+		}
+	}
+}
+
+// parsePasswordTemplate expands {{ .Env.VAR }} in local user password fields using the process environment.
+func parsePasswordTemplate(source string) string {
+	t, err := template.New("password").Option("missingkey=error").Parse(source)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Debug("Password template parse failed, using literal")
+		return source
+	}
+	var b strings.Builder
+	if err := t.Execute(&b, map[string]interface{}{"Env": env.BuildEnvMap()}); err != nil {
+		log.WithFields(log.Fields{"error": err}).Debug("Password template execute failed, using literal")
+		return source
+	}
+	return b.String()
 }
 
 func getActionID(action *Action) string {
