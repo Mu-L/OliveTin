@@ -495,6 +495,13 @@ export declare type GetLogsRequest = Message<"olivetin.api.v1.GetLogsRequest"> &
    * @generated from field: string date_filter = 2;
    */
   dateFilter: string;
+
+  /**
+   * Number of logs per page (optional; server default used if 0 or unset)
+   *
+   * @generated from field: int64 page_size = 3;
+   */
+  pageSize: bigint;
 };
 
 /**
@@ -1846,3 +1853,4 @@ export declare const OliveTinApiService: GenService<{
     output: typeof EntitySchema;
   },
 }>;
+
