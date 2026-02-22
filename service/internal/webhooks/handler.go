@@ -150,13 +150,28 @@ func (h *WebhookHandler) executeAction(action *config.Action, args map[string]st
 		return
 	}
 
+	definedArgs := filterToDefinedArguments(args, action)
 	req := &executor.ExecutionRequest{
 		Binding:           binding,
 		Cfg:               h.cfg,
 		Tags:              []string{"webhook"},
-		Arguments:         args,
+		Arguments:         definedArgs,
 		AuthenticatedUser: auth.UserFromSystem(h.cfg, "webhook"),
 	}
 
 	h.executor.ExecRequest(req)
+}
+
+func filterToDefinedArguments(args map[string]string, action *config.Action) map[string]string {
+	definedNames := make(map[string]struct{})
+	for _, arg := range action.Arguments {
+		definedNames[arg.Name] = struct{}{}
+	}
+	filtered := make(map[string]string)
+	for k, v := range args {
+		if _, ok := definedNames[k]; ok {
+			filtered[k] = v
+		}
+	}
+	return filtered
 }
