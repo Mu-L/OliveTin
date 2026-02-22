@@ -302,6 +302,40 @@ func TestCheckShellArgumentSafetyWithSafeTypes(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestCheckShellArgumentSafetyWithPassword(t *testing.T) {
+	a1 := config.Action{
+		Title: "Auth with password",
+		Shell: "somecommand --password '{{password}}'",
+		Arguments: []config.ActionArgument{
+			{
+				Name: "password",
+				Type: "password",
+			},
+		},
+	}
+
+	err := checkShellArgumentSafety(&a1)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "unsafe argument type 'password' cannot be used with Shell execution")
+	assert.Contains(t, err.Error(), "https://docs.olivetin.app/action_execution/shellvsexec.html")
+}
+
+func TestCheckShellArgumentSafetyWithPasswordAndExec(t *testing.T) {
+	a1 := config.Action{
+		Title: "Auth with password via exec",
+		Exec:  []string{"somecommand", "--password", "{{password}}"},
+		Arguments: []config.ActionArgument{
+			{
+				Name: "password",
+				Type: "password",
+			},
+		},
+	}
+
+	err := checkShellArgumentSafety(&a1)
+	assert.Nil(t, err)
+}
+
 func TestTypeSafetyCheckUrl(t *testing.T) {
 	assert.Nil(t, TypeSafetyCheck("test1", "http://google.com", "url"), "Test URL: google.com")
 	assert.Nil(t, TypeSafetyCheck("test2", "http://technowax.net:80?foo=bar", "url"), "Test URL: technowax.net with query arguments")
