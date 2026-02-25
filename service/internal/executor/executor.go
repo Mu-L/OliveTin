@@ -718,11 +718,16 @@ func filterToDefinedArgumentsOnly(req *ExecutionRequest) {
 	}
 	filtered := make(map[string]string)
 	for k, v := range req.Arguments {
-		if _, ok := definedNames[k]; ok || strings.HasPrefix(k, "ot_") {
+		if keepArgument(k, definedNames) {
 			filtered[k] = v
 		}
 	}
 	req.Arguments = filtered
+}
+
+func keepArgument(name string, definedNames map[string]struct{}) bool {
+	_, ok := definedNames[name]
+	return ok || strings.HasPrefix(name, "ot_")
 }
 
 func hasWebhookTag(req *ExecutionRequest) bool {
