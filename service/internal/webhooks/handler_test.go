@@ -16,9 +16,9 @@ func TestFilterToDefinedArguments(t *testing.T) {
 		},
 	}
 	args := map[string]string{
-		"repo":            "my-repo",
-		"branch":          "main",
-		"webhook_path":    "/deploy/prod",
+		"repo":                    "my-repo",
+		"branch":                  "main",
+		"webhook_path":            "/deploy/prod",
 		"webhook_header_x_custom": "malicious",
 	}
 

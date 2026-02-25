@@ -62,20 +62,25 @@ func TestParseTemplateWithActionContext_Json(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			if tt.checkJsonOnly {
-				prefix := strings.TrimSuffix(tt.expectedOutput, " ")
-				assert.True(t, strings.HasPrefix(output, prefix), "output %q should start with %q", output, prefix)
-				jsonPart := strings.TrimPrefix(output, prefix)
-				jsonPart = strings.TrimSpace(jsonPart)
-				var decoded map[string]string
-				err := json.Unmarshal([]byte(jsonPart), &decoded)
-				assert.NoError(t, err)
-				for k, v := range tt.args {
-					assert.Equal(t, v, decoded[k], "decoded JSON should contain %s=%s", k, v)
-				}
-				assert.Len(t, decoded, len(tt.args))
+				assertJsonOutput(t, output, tt.expectedOutput, tt.args)
 			} else {
 				assert.Equal(t, tt.expectedOutput, output)
 			}
 		})
 	}
+}
+
+func assertJsonOutput(t *testing.T, output, expectedPrefix string, args map[string]string) {
+	t.Helper()
+	prefix := strings.TrimSuffix(expectedPrefix, " ")
+	assert.True(t, strings.HasPrefix(output, prefix), "output %q should start with %q", output, prefix)
+	jsonPart := strings.TrimPrefix(output, prefix)
+	jsonPart = strings.TrimSpace(jsonPart)
+	var decoded map[string]string
+	err := json.Unmarshal([]byte(jsonPart), &decoded)
+	assert.NoError(t, err)
+	for k, v := range args {
+		assert.Equal(t, v, decoded[k], "decoded JSON should contain %s=%s", k, v)
+	}
+	assert.Len(t, decoded, len(args))
 }

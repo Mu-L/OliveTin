@@ -366,8 +366,8 @@ func TestFilterToDefinedArgumentsOnly(t *testing.T) {
 		},
 	}
 	req.Arguments = map[string]string{
-		"name":           "Alice",
-		"webhook_path":   "/malicious/$(id)",
+		"name":            "Alice",
+		"webhook_path":    "/malicious/$(id)",
 		"extra_undefined": "ignored",
 	}
 
@@ -381,13 +381,13 @@ func TestFilterToDefinedArgumentsOnly(t *testing.T) {
 func TestFilterToDefinedArgumentsPreservesSystemArgs(t *testing.T) {
 	req := newExecRequest()
 	req.Binding.Action = &config.Action{
-		Title: "Filter test",
-		Shell: "echo test",
+		Title:     "Filter test",
+		Shell:     "echo test",
 		Arguments: []config.ActionArgument{},
 	}
 	req.Arguments = map[string]string{
 		"ot_executionTrackingId": "track-123",
-		"ot_username":             "webhook",
+		"ot_username":            "webhook",
 	}
 
 	filterToDefinedArgumentsOnly(req)
