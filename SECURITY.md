@@ -17,7 +17,7 @@ The very purpose of OliveTin is to allow users to execute commands remotely on a
 
 This means that, by design, OliveTin has much higher potential to be used for remote code execution (RCE), and any security vulnerabilities that do occur have the potential to be much more severe than in other types of software. 
 
-We hope that you understand that while the project goes to great aims to be safe, and mitigate, that security vulnerabilities are inevitable, as they are with all software of all sizes - like Kubernetes, the Kernel, etc - and OliveTin has substancially less resources than those projects.
+We hope that you understand that while the project goes to great aims to be safe, and mitigate, that security vulnerabilities are inevitable, as they are with all software of all sizes - like Kubernetes, the Kernel, etc - and OliveTin has substantially less resources than those projects.
 
 With that being said, OliveTin tries to follow examples of best practice, so judge the project not on if/when it has security issues, but how security issues are responded to as the measure of quality.
 
