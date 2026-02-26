@@ -1268,7 +1268,7 @@ func (api *oliveTinAPI) RestartAction(ctx ctx.Context, req *connect.Request[apiv
 
 	return api.StartAction(ctx, &connect.Request[apiv1.StartActionRequest]{
 		Msg: &apiv1.StartActionRequest{
-			// FIXME
+			BindingId:        execReqLogEntry.GetBindingId(),
 			UniqueTrackingId: req.Msg.ExecutionTrackingId,
 		},
 	})

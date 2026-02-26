@@ -259,8 +259,7 @@ func (arg *ActionArgument) sanitize() {
 
 	arg.sanitizeNoType()
 
-	// TODO Validate the default against the type checker, but this creates a
-	// import loop
+	// Default value validation runs in executor at config load (validateArgumentDefaults).
 }
 
 func (arg *ActionArgument) sanitizeNoType() {
