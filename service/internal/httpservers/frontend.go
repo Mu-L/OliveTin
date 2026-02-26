@@ -23,6 +23,40 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func applySecurityHeaders(cfg *config.Config, w http.ResponseWriter) {
+	applyCSP(cfg, w)
+	applyXContentTypeOptions(cfg, w)
+	applyXFrameOptions(cfg, w)
+}
+
+func applyCSP(cfg *config.Config, w http.ResponseWriter) {
+	if !cfg.Security.HeaderContentSecurityPolicy || cfg.Security.ContentSecurityPolicy == "" {
+		return
+	}
+	w.Header().Set("Content-Security-Policy", cfg.Security.ContentSecurityPolicy)
+}
+
+func applyXContentTypeOptions(cfg *config.Config, w http.ResponseWriter) {
+	if !cfg.Security.HeaderXContentTypeOptions {
+		return
+	}
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+}
+
+func applyXFrameOptions(cfg *config.Config, w http.ResponseWriter) {
+	if !cfg.Security.HeaderXFrameOptions || cfg.Security.XFrameOptions == "" {
+		return
+	}
+	w.Header().Set("X-Frame-Options", cfg.Security.XFrameOptions)
+}
+
+func securityHeadersMiddleware(cfg *config.Config, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		applySecurityHeaders(cfg, w)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func logDebugRequest(cfg *config.Config, source string, r *http.Request) {
 	if cfg.LogDebugOptions.SingleFrontendRequests {
 		log.Debugf("SingleFrontend HTTP Req URL %v: %q", source, r.URL)
@@ -96,7 +130,7 @@ func StartFrontendMux(cfg *config.Config, ex *executor.Executor) {
 
 	srv := &http.Server{
 		Addr:    cfg.ListenAddressSingleHTTPFrontend,
-		Handler: mux,
+		Handler: securityHeadersMiddleware(cfg, mux),
 	}
 
 	log.Fatal(srv.ListenAndServe())
