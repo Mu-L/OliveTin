@@ -384,10 +384,11 @@ func (api *oliveTinAPI) ExecutionStatus(ctx ctx.Context, req *connect.Request[ap
 
 	if ile == nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("execution not found for tracking ID %s or action ID %s", req.Msg.ExecutionTrackingId, req.Msg.ActionId))
-	} else {
-		res.LogEntry = api.internalLogEntryToPb(ile, user)
 	}
-
+	if !isValidLogEntry(ile) || !api.isLogEntryAllowed(ile, user) {
+		return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("permission denied to view this execution"))
+	}
+	res.LogEntry = api.internalLogEntryToPb(ile, user)
 	return connect.NewResponse(res), nil
 }
 
