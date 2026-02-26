@@ -893,11 +893,17 @@ func (api *oliveTinAPI) OnExecutionFinished(ile *executor.InternalLogEntry) {
 }
 
 func (api *oliveTinAPI) GetDiagnostics(ctx ctx.Context, req *connect.Request[apiv1.GetDiagnosticsRequest]) (*connect.Response[apiv1.GetDiagnosticsResponse], error) {
+	user := auth.UserFromApiCall(ctx, req, api.cfg)
+	if err := api.checkDashboardAccess(user); err != nil {
+		return nil, err
+	}
+	if !user.EffectivePolicy.ShowDiagnostics {
+		return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("diagnostics are not available for your account"))
+	}
 	res := &apiv1.GetDiagnosticsResponse{
 		SshFoundKey:    installationinfo.Runtime.SshFoundKey,
 		SshFoundConfig: installationinfo.Runtime.SshFoundConfig,
 	}
-
 	return connect.NewResponse(res), nil
 }
 
