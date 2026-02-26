@@ -27,7 +27,7 @@ This is why we take security very seriously, and why we encourage responsible di
 
 Please use responsible disclosure practices when reporting a vulnerability. **You will receive full credit for your discovery**, and we will work with you to ensure that the issue is resolved as quickly as **possible**. Please note that only James Read has access to security issues at the moment, so please be patient and understanding if you do not receive an immediate response.
 
-* **Option A (preferred)**: GitHub Security Advisories, which allows you to report a vulnerability privately and securely. You can find the option to report a security issue in the "Issues" tab of this repository, and then select "Report a security vulnerability". This will allow you to provide details about the vulnerability without making it public.
+* **Option A (preferred)**: GitHub Security Advisories, which allows you to report a vulnerability privately and securely. Use this direct link to report privately: `https://github.com/OliveTin/OliveTin/security/advisories/new`. This allows you to provide details without making them public.
 
 * **Option B**: Please email `contact@jread.com` for responsible disclosure. 
 
