@@ -121,6 +121,7 @@ message StartActionByGetAndWaitResponse {
 message GetLogsRequest{
   int64 start_offset = 1;
   string date_filter = 2; // Optional date filter in YYYY-MM-DD format
+  int64 page_size = 3;   // Number of logs per page (optional; server default used if 0 or unset)
 };
 
 message LogEntry {

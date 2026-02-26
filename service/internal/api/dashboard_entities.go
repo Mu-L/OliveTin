@@ -57,7 +57,7 @@ func buildEntityFieldsetContents(contents []*config.DashboardComponent, ent *ent
 	for _, subitem := range contents {
 		c := cloneItem(subitem, ent, entityType, rr)
 
-		log.Infof("cloneItem: %+v", c)
+		log.Tracef("cloneItem: %+v", c)
 
 		if c != nil {
 			ret = append(ret, c)
