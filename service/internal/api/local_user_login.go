@@ -33,7 +33,7 @@ func CreateHash(password string) (string, error) {
 	hash, err := argon2id.CreateHash(password, &defaultParams)
 
 	if err != nil {
-		log.Fatal("Error creating hash: ", err)
+		log.Warnf("Error creating hash: %v", err)
 		return "", err
 	}
 
@@ -62,27 +62,22 @@ func comparePasswordAndHash(password, hash string) (bool, error) {
 }
 
 func checkUserPassword(cfg *config.Config, username, password string) (bool, error) {
-	for _, user := range cfg.AuthLocalUsers.Users {
-		if user.Username == username {
-			match, err := comparePasswordAndHash(password, user.Password)
-			if err != nil {
-				return false, err
-			}
-			if match {
-				return true, nil
-			} else {
-				log.WithFields(log.Fields{
-					"username": username,
-				}).Warn("Password does not match for user")
-
-				return false, nil
-			}
-		}
+	user := cfg.FindUserByUsername(username)
+	if user == nil {
+		log.WithFields(log.Fields{"username": username}).Warn("Failed to check password for user, as username was not found")
+		return false, nil
 	}
+	return comparePasswordAndLogResult(password, user.Password, username)
+}
 
-	log.WithFields(log.Fields{
-		"username": username,
-	}).Warn("Failed to check password for user, as username was not found")
-
-	return false, nil
+func comparePasswordAndLogResult(password, hash, username string) (bool, error) {
+	match, err := comparePasswordAndHash(password, hash)
+	if err != nil {
+		return false, err
+	}
+	if !match {
+		log.WithFields(log.Fields{"username": username}).Warn("Password does not match for user")
+		return false, nil
+	}
+	return true, nil
 }

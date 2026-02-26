@@ -158,14 +158,32 @@ func (api *oliveTinAPI) PasswordHash(ctx ctx.Context, req *connect.Request[apiv1
 	return connect.NewResponse(ret), nil
 }
 
-func (api *oliveTinAPI) LocalUserLogin(ctx ctx.Context, req *connect.Request[apiv1.LocalUserLoginRequest]) (*connect.Response[apiv1.LocalUserLoginResponse], error) {
-	// Check if local user authentication is enabled
-	if !api.cfg.AuthLocalUsers.Enabled {
-		return connect.NewResponse(&apiv1.LocalUserLoginResponse{
-			Success: false,
-		}), nil
+func (api *oliveTinAPI) applyLocalLoginResult(req *apiv1.LocalUserLoginRequest, response *connect.Response[apiv1.LocalUserLoginResponse], match bool) {
+	if match {
+		user := api.cfg.FindUserByUsername(req.Username)
+		if user != nil {
+			sid := uuid.NewString()
+			auth.RegisterUserSession(api.cfg, "local", sid, user.Username)
+			log.WithFields(log.Fields{"username": user.Username}).Info("LocalUserLogin: Session created and registered")
+			cookie := &http.Cookie{
+				Name:     "olivetin-sid-local",
+				Value:    sid,
+				MaxAge:   31556952,
+				HttpOnly: true,
+				Path:     "/",
+			}
+			response.Header().Set("Set-Cookie", cookie.String())
+		}
+		log.WithFields(log.Fields{"username": req.Username}).Info("LocalUserLogin: User logged in successfully.")
+	} else {
+		log.WithFields(log.Fields{"username": req.Username}).Warn("LocalUserLogin: User login failed.")
 	}
+}
 
+func (api *oliveTinAPI) LocalUserLogin(ctx ctx.Context, req *connect.Request[apiv1.LocalUserLoginRequest]) (*connect.Response[apiv1.LocalUserLoginResponse], error) {
+	if !api.cfg.AuthLocalUsers.Enabled {
+		return connect.NewResponse(&apiv1.LocalUserLoginResponse{Success: false}), nil
+	}
 	match, err := checkUserPassword(api.cfg, req.Msg.Username, req.Msg.Password)
 	if err != nil {
 		if errors.Is(err, ErrArgon2Busy) {
@@ -173,43 +191,8 @@ func (api *oliveTinAPI) LocalUserLogin(ctx ctx.Context, req *connect.Request[api
 		}
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("checking password: %w", err))
 	}
-
-	response := connect.NewResponse(&apiv1.LocalUserLoginResponse{
-		Success: match,
-	})
-
-	if match {
-		// Set authentication cookie for successful login
-		user := api.cfg.FindUserByUsername(req.Msg.Username)
-		if user != nil {
-			sid := uuid.NewString()
-			// Register the session in the session storage
-			auth.RegisterUserSession(api.cfg, "local", sid, user.Username)
-
-			log.WithFields(log.Fields{
-				"username": user.Username,
-			}).Info("LocalUserLogin: Session created and registered")
-
-			// Set the authentication cookie in the response headers
-			cookie := &http.Cookie{
-				Name:     "olivetin-sid-local",
-				Value:    sid,
-				MaxAge:   31556952, // 1 year
-				HttpOnly: true,
-				Path:     "/",
-			}
-			response.Header().Set("Set-Cookie", cookie.String())
-		}
-
-		log.WithFields(log.Fields{
-			"username": req.Msg.Username,
-		}).Info("LocalUserLogin: User logged in successfully.")
-	} else {
-		log.WithFields(log.Fields{
-			"username": req.Msg.Username,
-		}).Warn("LocalUserLogin: User login failed.")
-	}
-
+	response := connect.NewResponse(&apiv1.LocalUserLoginResponse{Success: match})
+	api.applyLocalLoginResult(req.Msg, response, match)
 	return response, nil
 }
 
@@ -364,31 +347,36 @@ func getMostRecentExecutionStatusByActionId(api *oliveTinAPI, actionId string) *
 	return ile
 }
 
-func (api *oliveTinAPI) ExecutionStatus(ctx ctx.Context, req *connect.Request[apiv1.ExecutionStatusRequest]) (*connect.Response[apiv1.ExecutionStatusResponse], error) {
-	res := &apiv1.ExecutionStatusResponse{}
-
-	user := auth.UserFromApiCall(ctx, req, api.cfg)
-
-	if err := api.checkDashboardAccess(user); err != nil {
-		return nil, err
-	}
-
-	var ile *executor.InternalLogEntry
-
-	if req.Msg.ExecutionTrackingId != "" {
-		ile = getExecutionStatusByTrackingID(api, req.Msg.ExecutionTrackingId)
-
-	} else {
-		ile = getMostRecentExecutionStatusByActionId(api, req.Msg.ActionId)
-	}
-
+func (api *oliveTinAPI) resolveExecutionStatusForView(msg *apiv1.ExecutionStatusRequest, user *authpublic.AuthenticatedUser) (*executor.InternalLogEntry, error) {
+	ile := api.getExecutionStatusByRequest(msg)
 	if ile == nil {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("execution not found for tracking ID %s or action ID %s", req.Msg.ExecutionTrackingId, req.Msg.ActionId))
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("execution not found for tracking ID %s or action ID %s", msg.ExecutionTrackingId, msg.ActionId))
 	}
 	if !isValidLogEntry(ile) || !api.isLogEntryAllowed(ile, user) {
 		return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("permission denied to view this execution"))
 	}
-	res.LogEntry = api.internalLogEntryToPb(ile, user)
+	return ile, nil
+}
+
+func (api *oliveTinAPI) getExecutionStatusByRequest(msg *apiv1.ExecutionStatusRequest) *executor.InternalLogEntry {
+	if msg.ExecutionTrackingId != "" {
+		return getExecutionStatusByTrackingID(api, msg.ExecutionTrackingId)
+	}
+	return getMostRecentExecutionStatusByActionId(api, msg.ActionId)
+}
+
+func (api *oliveTinAPI) ExecutionStatus(ctx ctx.Context, req *connect.Request[apiv1.ExecutionStatusRequest]) (*connect.Response[apiv1.ExecutionStatusResponse], error) {
+	user := auth.UserFromApiCall(ctx, req, api.cfg)
+	if err := api.checkDashboardAccess(user); err != nil {
+		return nil, err
+	}
+	ile, err := api.resolveExecutionStatusForView(req.Msg, user)
+	if err != nil {
+		return nil, err
+	}
+	res := &apiv1.ExecutionStatusResponse{
+		LogEntry: api.internalLogEntryToPb(ile, user),
+	}
 	return connect.NewResponse(res), nil
 }
 
