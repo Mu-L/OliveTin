@@ -494,6 +494,19 @@ func (api *oliveTinAPI) buildCustomDashboardResponse(rr *DashboardRenderRequest,
 	return connect.NewResponse(res), nil
 }
 
+func resolveLogsPageSize(requestPageSize, defaultPageSize int64) int64 {
+	if requestPageSize == 0 {
+		return defaultPageSize
+	}
+	if requestPageSize < 10 {
+		return 10
+	}
+	if requestPageSize > 100 {
+		return 100
+	}
+	return requestPageSize
+}
+
 func (api *oliveTinAPI) GetLogs(ctx ctx.Context, req *connect.Request[apiv1.GetLogsRequest]) (*connect.Response[apiv1.GetLogsResponse], error) {
 	user := auth.UserFromApiCall(ctx, req, api.cfg)
 
@@ -501,12 +514,9 @@ func (api *oliveTinAPI) GetLogs(ctx ctx.Context, req *connect.Request[apiv1.GetL
 		return nil, err
 	}
 
+	pageSize := resolveLogsPageSize(req.Msg.GetPageSize(), api.cfg.LogHistoryPageSize)
+	logEntries, paging := api.executor.GetLogTrackingIdsACL(api.cfg, user, req.Msg.StartOffset, pageSize, req.Msg.DateFilter)
 	ret := &apiv1.GetLogsResponse{}
-	dateFilter := ""
-	if req.Msg.DateFilter != "" {
-		dateFilter = req.Msg.DateFilter
-	}
-	logEntries, paging := api.executor.GetLogTrackingIdsACL(api.cfg, user, req.Msg.StartOffset, api.cfg.LogHistoryPageSize, dateFilter)
 	for _, le := range logEntries {
 		ret.Logs = append(ret.Logs, api.internalLogEntryToPb(le, user))
 	}

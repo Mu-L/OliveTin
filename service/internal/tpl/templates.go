@@ -1,6 +1,7 @@
 package tpl
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -12,8 +13,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func jsonFunc(v any) (string, error) {
+	if v == nil {
+		return "null", nil
+	}
+	data, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
 var tpl = template.New("tpl").
-	Option("missingkey=error")
+	Option("missingkey=error").
+	Funcs(template.FuncMap{"Json": jsonFunc})
 
 type olivetinInfo struct {
 	Build   *installationinfo.BuildInfo

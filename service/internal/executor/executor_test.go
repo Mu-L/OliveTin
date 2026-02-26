@@ -295,3 +295,103 @@ func TestMangleInvalidArgumentValues(t *testing.T) {
 	assert.Equal(t, req.logEntry.Output, "The date is: 1990-01-10T12:00:00\n", "Date should be mangled to a valid format")
 
 }
+
+func TestWebhookRejectsShellExecution(t *testing.T) {
+	cfg := config.DefaultConfig()
+	e := DefaultExecutor(cfg)
+	a1 := &config.Action{
+		Title: "Webhook Shell Reject",
+		Shell: "echo '{{ msg }}'",
+		Arguments: []config.ActionArgument{
+			{Name: "msg", Type: "ascii"},
+		},
+	}
+	cfg.Actions = append(cfg.Actions, a1)
+	cfg.Sanitize()
+	e.RebuildActionMap()
+
+	req := ExecutionRequest{
+		Tags:              []string{"webhook"},
+		AuthenticatedUser: auth.UserFromSystem(cfg, "webhook"),
+		Cfg:               cfg,
+		Arguments:         map[string]string{"msg": "hello"},
+		Binding:           e.FindBindingWithNoEntity(a1),
+	}
+
+	wg, _ := e.ExecRequest(&req)
+	wg.Wait()
+
+	assert.NotNil(t, req.logEntry)
+	assert.Equal(t, int32(-1337), req.logEntry.ExitCode)
+	assert.Contains(t, req.logEntry.Output, "webhooks cannot use Shell execution")
+}
+
+func TestWebhookAllowsExecExecution(t *testing.T) {
+	cfg := config.DefaultConfig()
+	e := DefaultExecutor(cfg)
+	a1 := &config.Action{
+		Title: "Webhook Exec OK",
+		Exec:  []string{"echo", "{{ msg }}"},
+		Arguments: []config.ActionArgument{
+			{Name: "msg", Type: "ascii"},
+		},
+	}
+	cfg.Actions = append(cfg.Actions, a1)
+	cfg.Sanitize()
+	e.RebuildActionMap()
+
+	req := ExecutionRequest{
+		Tags:              []string{"webhook"},
+		AuthenticatedUser: auth.UserFromSystem(cfg, "webhook"),
+		Cfg:               cfg,
+		Arguments:         map[string]string{"msg": "hello"},
+		Binding:           e.FindBindingWithNoEntity(a1),
+	}
+
+	wg, _ := e.ExecRequest(&req)
+	wg.Wait()
+
+	assert.NotNil(t, req.logEntry)
+	assert.Equal(t, int32(0), req.logEntry.ExitCode)
+	assert.Contains(t, req.logEntry.Output, "hello")
+}
+
+func TestFilterToDefinedArgumentsOnly(t *testing.T) {
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
+		Title: "Filter test",
+		Shell: "echo '{{ name }}'",
+		Arguments: []config.ActionArgument{
+			{Name: "name", Type: "ascii"},
+		},
+	}
+	req.Arguments = map[string]string{
+		"name":            "Alice",
+		"webhook_path":    "/malicious/$(id)",
+		"extra_undefined": "ignored",
+	}
+
+	filterToDefinedArgumentsOnly(req)
+
+	assert.Equal(t, "Alice", req.Arguments["name"])
+	assert.Empty(t, req.Arguments["webhook_path"])
+	assert.Empty(t, req.Arguments["extra_undefined"])
+}
+
+func TestFilterToDefinedArgumentsPreservesSystemArgs(t *testing.T) {
+	req := newExecRequest()
+	req.Binding.Action = &config.Action{
+		Title:     "Filter test",
+		Shell:     "echo test",
+		Arguments: []config.ActionArgument{},
+	}
+	req.Arguments = map[string]string{
+		"ot_executionTrackingId": "track-123",
+		"ot_username":            "webhook",
+	}
+
+	filterToDefinedArgumentsOnly(req)
+
+	assert.Equal(t, "track-123", req.Arguments["ot_executionTrackingId"])
+	assert.Equal(t, "webhook", req.Arguments["ot_username"])
+}

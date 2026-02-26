@@ -664,6 +664,7 @@ func stepParseArgs(req *ExecutionRequest) bool {
 		return fail(req, fmt.Errorf("cannot parse arguments: Binding or Action is nil"))
 	}
 
+	filterToDefinedArgumentsOnly(req)
 	mangleInvalidArgumentValues(req)
 
 	if hasExec(req) {
@@ -686,6 +687,9 @@ func handleExecBranch(req *ExecutionRequest) bool {
 }
 
 func handleShellBranch(req *ExecutionRequest) bool {
+	if hasWebhookTag(req) {
+		return fail(req, fmt.Errorf("webhooks cannot use Shell execution; use exec instead. See https://docs.olivetin.app/action_execution/shellvsexec.html"))
+	}
 	if err := checkShellArgumentSafety(req.Binding.Action); err != nil {
 		return fail(req, err)
 	}
@@ -705,6 +709,34 @@ func ensureArgumentMap(req *ExecutionRequest) {
 	if req.Arguments == nil {
 		req.Arguments = make(map[string]string)
 	}
+}
+
+func filterToDefinedArgumentsOnly(req *ExecutionRequest) {
+	definedNames := make(map[string]struct{})
+	for _, arg := range req.Binding.Action.Arguments {
+		definedNames[arg.Name] = struct{}{}
+	}
+	filtered := make(map[string]string)
+	for k, v := range req.Arguments {
+		if keepArgument(k, definedNames) {
+			filtered[k] = v
+		}
+	}
+	req.Arguments = filtered
+}
+
+func keepArgument(name string, definedNames map[string]struct{}) bool {
+	_, ok := definedNames[name]
+	return ok || strings.HasPrefix(name, "ot_")
+}
+
+func hasWebhookTag(req *ExecutionRequest) bool {
+	for _, tag := range req.Tags {
+		if tag == "webhook" {
+			return true
+		}
+	}
+	return false
 }
 
 func injectSystemArgs(req *ExecutionRequest) {

@@ -7,14 +7,20 @@ updates:
       interval: "weekly"
     target-branch: "next"
     open-pull-requests-limit: 10
+    labels:
+      - "3k"
+      - "dependencies"
 
-  # npm updates for frontend - targeting "release/2k" branch
+  # npm updates for frontend - targeting "release/2k" branch (security updates only)
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "weekly"
     target-branch: "release/2k"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
+    labels:
+      - "2k"
+      - "dependencies"
 
   # npm updates for integration-tests - targeting "next" branch
   - package-ecosystem: "npm"
@@ -23,14 +29,20 @@ updates:
       interval: "weekly"
     target-branch: "next"
     open-pull-requests-limit: 10
+    labels:
+      - "3k"
+      - "dependencies"
 
-  # npm updates for integration-tests - targeting "release/2k" branch
+  # npm updates for integration-tests - targeting "release/2k" branch (security updates only)
   - package-ecosystem: "npm"
     directory: "/integration-tests"
     schedule:
       interval: "weekly"
     target-branch: "release/2k"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
+    labels:
+      - "2k"
+      - "dependencies"
 
   # Go modules updates for service - targeting "next" branch
   - package-ecosystem: "gomod"
@@ -39,14 +51,20 @@ updates:
       interval: "weekly"
     target-branch: "next"
     open-pull-requests-limit: 10
+    labels:
+      - "3k"
+      - "dependencies"
 
-  # Go modules updates for service - targeting "release/2k" branch
+  # Go modules updates for service - targeting "release/2k" branch (security updates only)
   - package-ecosystem: "gomod"
     directory: "/service"
     schedule:
       interval: "weekly"
     target-branch: "release/2k"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
+    labels:
+      - "2k"
+      - "dependencies"
 
   # Go modules updates for lang - targeting "next" branch
   - package-ecosystem: "gomod"
@@ -55,14 +73,20 @@ updates:
       interval: "weekly"
     target-branch: "next"
     open-pull-requests-limit: 10
+    labels:
+      - "3k"
+      - "dependencies"
 
-  # Go modules updates for lang - targeting "release/2k" branch
+  # Go modules updates for lang - targeting "release/2k" branch (security updates only)
   - package-ecosystem: "gomod"
     directory: "/lang"
     schedule:
       interval: "weekly"
     target-branch: "release/2k"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
+    labels:
+      - "2k"
+      - "dependencies"
 
   # Docker updates - targeting "next" branch
   - package-ecosystem: "docker"
@@ -71,12 +95,18 @@ updates:
       interval: "weekly"
     target-branch: "next"
     open-pull-requests-limit: 10
+    labels:
+      - "3k"
+      - "dependencies"
 
-  # Docker updates - targeting "release/2k" branch
+  # Docker updates - targeting "release/2k" branch (security updates only)
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
     target-branch: "release/2k"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
+    labels:
+      - "2k"
+      - "dependencies"
 
