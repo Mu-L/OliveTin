@@ -107,13 +107,14 @@ type PrometheusConfig struct {
 	DefaultGoMetrics bool `koanf:"defaultGoMetrics"`
 }
 
-// SecurityConfig allows users to fine tune the security related HTTP headers.
+// SecurityConfig allows users to fine tune the security related HTTP headers and cookie options.
 type SecurityConfig struct {
 	HeaderContentSecurityPolicy bool   `koanf:"headerContentSecurityPolicy"`
 	ContentSecurityPolicy       string `koanf:"contentSecurityPolicy"`
 	HeaderXContentTypeOptions   bool   `koanf:"headerXContentTypeOptions"`
 	HeaderXFrameOptions         bool   `koanf:"headerXFrameOptions"`
 	XFrameOptions               string `koanf:"xFrameOptions"`
+	ForceSecureCookies          bool   `koanf:"forceSecureCookies"`
 }
 
 // Config is the global config used through the whole app.

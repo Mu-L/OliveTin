@@ -158,7 +158,12 @@ func (api *oliveTinAPI) PasswordHash(ctx ctx.Context, req *connect.Request[apiv1
 	return connect.NewResponse(ret), nil
 }
 
-func (api *oliveTinAPI) applyLocalLoginResult(req *apiv1.LocalUserLoginRequest, response *connect.Response[apiv1.LocalUserLoginResponse], match bool) {
+func (api *oliveTinAPI) cookieSecure(header http.Header) bool {
+	useTLS := header.Get("X-Forwarded-Proto") == "https"
+	return useTLS || api.cfg.Security.ForceSecureCookies
+}
+
+func (api *oliveTinAPI) applyLocalLoginResult(req *apiv1.LocalUserLoginRequest, response *connect.Response[apiv1.LocalUserLoginResponse], match bool, secure bool) {
 	if match {
 		user := api.cfg.FindUserByUsername(req.Username)
 		if user != nil {
@@ -171,6 +176,8 @@ func (api *oliveTinAPI) applyLocalLoginResult(req *apiv1.LocalUserLoginRequest, 
 				MaxAge:   31556952,
 				HttpOnly: true,
 				Path:     "/",
+				Secure:   secure,
+				SameSite: http.SameSiteLaxMode,
 			}
 			response.Header().Set("Set-Cookie", cookie.String())
 		}
@@ -192,7 +199,7 @@ func (api *oliveTinAPI) LocalUserLogin(ctx ctx.Context, req *connect.Request[api
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("checking password: %w", err))
 	}
 	response := connect.NewResponse(&apiv1.LocalUserLoginResponse{Success: match})
-	api.applyLocalLoginResult(req.Msg, response, match)
+	api.applyLocalLoginResult(req.Msg, response, match, api.cookieSecure(req.Header()))
 	return response, nil
 }
 
@@ -389,6 +396,7 @@ func (api *oliveTinAPI) Logout(ctx ctx.Context, req *connect.Request[apiv1.Logou
 	}).Info("Logout: User logged out")
 
 	response := connect.NewResponse(&apiv1.LogoutResponse{})
+	secure := api.cookieSecure(req.Header())
 
 	// Clear the local authentication cookie by setting it to expire
 	localCookie := &http.Cookie{
@@ -397,6 +405,8 @@ func (api *oliveTinAPI) Logout(ctx ctx.Context, req *connect.Request[apiv1.Logou
 		MaxAge:   -1, // This tells the browser to delete the cookie
 		HttpOnly: true,
 		Path:     "/",
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
 	}
 	response.Header().Set("Set-Cookie", localCookie.String())
 
@@ -407,6 +417,8 @@ func (api *oliveTinAPI) Logout(ctx ctx.Context, req *connect.Request[apiv1.Logou
 		MaxAge:   -1, // This tells the browser to delete the cookie
 		HttpOnly: true,
 		Path:     "/",
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
 	}
 	response.Header().Add("Set-Cookie", oauth2Cookie.String())
 
