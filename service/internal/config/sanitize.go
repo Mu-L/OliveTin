@@ -16,6 +16,7 @@ func (cfg *Config) Sanitize() {
 	cfg.sanitizeAuthRequireGuestsToLogin()
 	cfg.sanitizeLogHistoryPageSize()
 	cfg.sanitizeLocalUserPasswords()
+	cfg.sanitizeSecurityHeaders()
 
 	// log.Infof("cfg %p", cfg)
 
@@ -181,6 +182,25 @@ func (cfg *Config) sanitizeLocalUserPasswords() {
 			user.Password = parsePasswordTemplate(user.Password)
 		}
 	}
+}
+
+func (cfg *Config) sanitizeSecurityHeaders() {
+	cfg.sanitizeSecurityHeadersCSP()
+	cfg.sanitizeSecurityHeadersXFrameOptions()
+}
+
+func (cfg *Config) sanitizeSecurityHeadersCSP() {
+	if !cfg.Security.HeaderContentSecurityPolicy || cfg.Security.ContentSecurityPolicy != "" {
+		return
+	}
+	cfg.Security.ContentSecurityPolicy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'"
+}
+
+func (cfg *Config) sanitizeSecurityHeadersXFrameOptions() {
+	if !cfg.Security.HeaderXFrameOptions || cfg.Security.XFrameOptions != "" {
+		return
+	}
+	cfg.Security.XFrameOptions = "DENY"
 }
 
 // parsePasswordTemplate expands {{ .Env.VAR }} in local user password fields using the process environment.
