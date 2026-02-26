@@ -78,7 +78,7 @@
           </tbody>
         </table>
 
-        <Pagination :pageSize="pageSize" :total="totalCount" :currentPage="currentPage" @page-change="handlePageChange" class="padding"
+        <Pagination :pageSize="pageSize" :total="totalCount" :currentPage="currentPage" :page="currentPage" @page-change="handlePageChange" class="padding"
           @page-size-change="handlePageSizeChange" itemTitle="execution logs" />
       </div>
 

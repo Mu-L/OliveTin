@@ -1105,6 +1105,7 @@ type GetLogsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StartOffset   int64                  `protobuf:"varint,1,opt,name=start_offset,json=startOffset,proto3" json:"start_offset,omitempty"`
 	DateFilter    string                 `protobuf:"bytes,2,opt,name=date_filter,json=dateFilter,proto3" json:"date_filter,omitempty"` // Optional date filter in YYYY-MM-DD format
+	PageSize      int64                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`      // Number of logs per page (optional; server default used if 0 or unset)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1151,6 +1152,13 @@ func (x *GetLogsRequest) GetDateFilter() string {
 		return x.DateFilter
 	}
 	return ""
+}
+
+func (x *GetLogsRequest) GetPageSize() int64 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
 }
 
 type LogEntry struct {
@@ -3972,11 +3980,12 @@ const file_olivetin_api_v1_olivetin_proto_rawDesc = "" +
 	"\x1eStartActionByGetAndWaitRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\"Y\n" +
 	"\x1fStartActionByGetAndWaitResponse\x126\n" +
-	"\tlog_entry\x18\x01 \x01(\v2\x19.olivetin.api.v1.LogEntryR\blogEntry\"T\n" +
+	"\tlog_entry\x18\x01 \x01(\v2\x19.olivetin.api.v1.LogEntryR\blogEntry\"q\n" +
 	"\x0eGetLogsRequest\x12!\n" +
 	"\fstart_offset\x18\x01 \x01(\x03R\vstartOffset\x12\x1f\n" +
 	"\vdate_filter\x18\x02 \x01(\tR\n" +
-	"dateFilter\"\x89\x05\n" +
+	"dateFilter\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x03R\bpageSize\"\x89\x05\n" +
 	"\bLogEntry\x12)\n" +
 	"\x10datetime_started\x18\x01 \x01(\tR\x0fdatetimeStarted\x12!\n" +
 	"\faction_title\x18\x02 \x01(\tR\vactionTitle\x12\x16\n" +
