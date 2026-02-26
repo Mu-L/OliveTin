@@ -3,6 +3,7 @@ package api
 import (
 	ctx "context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path"
 	"sort"
@@ -144,6 +145,9 @@ func (api *oliveTinAPI) PasswordHash(ctx ctx.Context, req *connect.Request[apiv1
 	hash, err := createHash(req.Msg.Password)
 
 	if err != nil {
+		if errors.Is(err, ErrArgon2Busy) {
+			return nil, connect.NewError(connect.CodeResourceExhausted, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("error creating hash: %w", err))
 	}
 
@@ -162,7 +166,13 @@ func (api *oliveTinAPI) LocalUserLogin(ctx ctx.Context, req *connect.Request[api
 		}), nil
 	}
 
-	match := checkUserPassword(api.cfg, req.Msg.Username, req.Msg.Password)
+	match, err := checkUserPassword(api.cfg, req.Msg.Username, req.Msg.Password)
+	if err != nil {
+		if errors.Is(err, ErrArgon2Busy) {
+			return nil, connect.NewError(connect.CodeResourceExhausted, err)
+		}
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("checking password: %w", err))
+	}
 
 	response := connect.NewResponse(&apiv1.LocalUserLoginResponse{
 		Success: match,
