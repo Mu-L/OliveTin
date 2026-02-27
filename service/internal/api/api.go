@@ -180,8 +180,10 @@ func (api *oliveTinAPI) applyLocalLoginResult(req *apiv1.LocalUserLoginRequest, 
 				SameSite: http.SameSiteLaxMode,
 			}
 			response.Header().Set("Set-Cookie", cookie.String())
+			log.WithFields(log.Fields{"username": user.Username}).Info("LocalUserLogin: User logged in successfully.")
+		} else {
+			log.WithFields(log.Fields{"username": req.Username}).Warn("LocalUserLogin: Password matched but user lookup failed.")
 		}
-		log.WithFields(log.Fields{"username": req.Username}).Info("LocalUserLogin: User logged in successfully.")
 	} else {
 		log.WithFields(log.Fields{"username": req.Username}).Warn("LocalUserLogin: User login failed.")
 	}
