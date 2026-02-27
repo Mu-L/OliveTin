@@ -98,8 +98,9 @@ type AccessControlList struct {
 
 // ConfigurationPolicy defines global settings which are overridden with an ACL.
 type ConfigurationPolicy struct {
-	ShowDiagnostics bool `koanf:"showDiagnostics"`
-	ShowLogList     bool `koanf:"showLogList"`
+	ShowDiagnostics   bool `koanf:"showDiagnostics"`
+	ShowLogList       bool `koanf:"showLogList"`
+	ShowVersionNumber bool `koanf:"showVersionNumber"`
 }
 
 type PrometheusConfig struct {
@@ -297,6 +298,7 @@ func DefaultConfigWithBasePort(basePort int) *Config {
 
 	config.DefaultPolicy.ShowDiagnostics = true
 	config.DefaultPolicy.ShowLogList = true
+	config.DefaultPolicy.ShowVersionNumber = true
 
 	return &config
 }
