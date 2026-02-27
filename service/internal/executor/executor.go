@@ -603,14 +603,14 @@ func getExecutionsCount(rate config.RateSpec, req *ExecutionRequest) int {
 
 	then := time.Now().Add(-duration)
 
+	currentEntityPrefix := ""
+	if req.Binding != nil && req.Binding.Entity != nil {
+		currentEntityPrefix = req.Binding.Entity.UniqueKey
+	}
 	for _, logEntry := range req.executor.GetLogsByBindingId(req.Binding.ID) {
-		// FIXME
-		/*
-			if logEntry.EntityPrefix != req.EntityPrefix {
-				continue
-			}
-		*/
-
+		if logEntry.EntityPrefix != currentEntityPrefix {
+			continue
+		}
 		if logEntry.DatetimeStarted.After(then) && !logEntry.Blocked {
 
 			executions += 1
@@ -761,28 +761,12 @@ func fail(req *ExecutionRequest, err error) bool {
 func stepRequestAction(req *ExecutionRequest) bool {
 	metricActionsRequested.Inc()
 
-	// If there is no binding or action, do not proceed. Leave default
-	// log entry values (icon/title/id) and stop execution gracefully.
-	if req.Binding == nil || req.Binding.Action == nil {
-		log.Warnf("Action request has no binding/action; skipping execution")
+	if !stepRequestActionHasBinding(req) {
 		return false
 	}
 
-	req.logEntry.Binding = req.Binding
-	req.logEntry.ActionConfigTitle = req.Binding.Action.Title
-	req.logEntry.ActionTitle = tpl.ParseTemplateOfActionBeforeExec(req.Binding.Action.Title, req.Binding.Entity)
-	req.logEntry.ActionIcon = req.Binding.Action.Icon
-	req.logEntry.Tags = req.Tags
-
-	req.executor.logmutex.Lock()
-
-	if _, containsKey := req.executor.LogsByBindingId[req.Binding.ID]; !containsKey {
-		req.executor.LogsByBindingId[req.Binding.ID] = make([]*InternalLogEntry, 0)
-	}
-
-	req.executor.LogsByBindingId[req.Binding.ID] = append(req.executor.LogsByBindingId[req.Binding.ID], req.logEntry)
-
-	req.executor.logmutex.Unlock()
+	stepRequestActionPopulateLogEntry(req)
+	stepRequestActionRegisterLog(req)
 
 	log.WithFields(log.Fields{
 		"actionTitle": req.logEntry.ActionTitle,
@@ -792,6 +776,35 @@ func stepRequestAction(req *ExecutionRequest) bool {
 	notifyListenersStarted(req)
 
 	return true
+}
+
+func stepRequestActionHasBinding(req *ExecutionRequest) bool {
+	if req.Binding == nil || req.Binding.Action == nil {
+		log.Warnf("Action request has no binding/action; skipping execution")
+		return false
+	}
+	return true
+}
+
+func stepRequestActionPopulateLogEntry(req *ExecutionRequest) {
+	req.logEntry.Binding = req.Binding
+	req.logEntry.ActionConfigTitle = req.Binding.Action.Title
+	req.logEntry.ActionTitle = tpl.ParseTemplateOfActionBeforeExec(req.Binding.Action.Title, req.Binding.Entity)
+	req.logEntry.ActionIcon = req.Binding.Action.Icon
+	req.logEntry.Tags = req.Tags
+	if req.Binding.Entity != nil {
+		req.logEntry.EntityPrefix = req.Binding.Entity.UniqueKey
+	}
+}
+
+func stepRequestActionRegisterLog(req *ExecutionRequest) {
+	req.executor.logmutex.Lock()
+	defer req.executor.logmutex.Unlock()
+
+	if _, containsKey := req.executor.LogsByBindingId[req.Binding.ID]; !containsKey {
+		req.executor.LogsByBindingId[req.Binding.ID] = make([]*InternalLogEntry, 0)
+	}
+	req.executor.LogsByBindingId[req.Binding.ID] = append(req.executor.LogsByBindingId[req.Binding.ID], req.logEntry)
 }
 
 func stepLogStart(req *ExecutionRequest) bool {

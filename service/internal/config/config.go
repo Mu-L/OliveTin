@@ -107,6 +107,16 @@ type PrometheusConfig struct {
 	DefaultGoMetrics bool `koanf:"defaultGoMetrics"`
 }
 
+// SecurityConfig allows users to fine tune the security related HTTP headers and cookie options.
+type SecurityConfig struct {
+	HeaderContentSecurityPolicy bool   `koanf:"headerContentSecurityPolicy"`
+	ContentSecurityPolicy       string `koanf:"contentSecurityPolicy"`
+	HeaderXContentTypeOptions   bool   `koanf:"headerXContentTypeOptions"`
+	HeaderXFrameOptions         bool   `koanf:"headerXFrameOptions"`
+	XFrameOptions               string `koanf:"xFrameOptions"`
+	ForceSecureCookies          bool   `koanf:"forceSecureCookies"`
+}
+
 // Config is the global config used through the whole app.
 type Config struct {
 	UseSingleHTTPFrontend           bool                       `koanf:"useSingleHTTPFrontend"`
@@ -160,6 +170,7 @@ type Config struct {
 	InsecureAllowDumpActionMap      bool                       `koanf:"insecureAllowDumpActionMap"`
 	InsecureAllowDumpJwtClaims      bool                       `koanf:"insecureAllowDumpJwtClaims"`
 	Prometheus                      PrometheusConfig           `koanf:"prometheus"`
+	Security                        SecurityConfig             `koanf:"security"`
 	SaveLogs                        SaveLogsConfig             `koanf:"saveLogs"`
 	DefaultIconForActions           string                     `koanf:"defaultIconForActions"`
 	DefaultIconForDirectories       string                     `koanf:"defaultIconForDirectories"`
@@ -268,6 +279,11 @@ func DefaultConfigWithBasePort(basePort int) *Config {
 	config.InsecureAllowDumpJwtClaims = false
 	config.Prometheus.Enabled = false
 	config.Prometheus.DefaultGoMetrics = false
+	config.Security.HeaderContentSecurityPolicy = true
+	config.Security.ContentSecurityPolicy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'"
+	config.Security.HeaderXContentTypeOptions = true
+	config.Security.HeaderXFrameOptions = true
+	config.Security.XFrameOptions = "DENY"
 	config.DefaultIconForActions = "&#x1F600;"
 	config.DefaultIconForDirectories = "&#128193"
 	config.DefaultIconForBack = "&laquo;"

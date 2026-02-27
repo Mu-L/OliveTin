@@ -108,14 +108,20 @@ func randString(nByte int) (string, error) {
 	return base64.URLEncoding.EncodeToString(b), nil
 }
 
+func (h *OAuth2Handler) cookieSecure(r *http.Request) bool {
+	useTLS := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+	return useTLS || h.cfg.Security.ForceSecureCookies
+}
+
 func (h *OAuth2Handler) setOAuthCallbackCookie(w http.ResponseWriter, r *http.Request, name, value string) {
 	cookie := &http.Cookie{
 		Name:     name,
 		Value:    value,
 		MaxAge:   900, // 15 minutes
-		Secure:   r.TLS != nil,
+		Secure:   h.cookieSecure(r),
 		HttpOnly: true,
 		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	}
 
 	http.SetCookie(w, cookie)
