@@ -51,6 +51,7 @@ message GetDashboardResponse {
 message EffectivePolicy {
 	bool show_diagnostics = 1;
 	bool show_log_list = 2;
+	bool show_version_number = 3;
 }
 
 message GetDashboardRequest {

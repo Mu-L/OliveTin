@@ -210,6 +210,11 @@ export declare type EffectivePolicy = Message<"olivetin.api.v1.EffectivePolicy">
    * @generated from field: bool show_log_list = 2;
    */
   showLogList: boolean;
+
+  /**
+   * @generated from field: bool show_version_number = 3;
+   */
+  showVersionNumber: boolean;
 };
 
 /**
@@ -1853,4 +1858,3 @@ export declare const OliveTinApiService: GenService<{
     output: typeof EntitySchema;
   },
 }>;
-

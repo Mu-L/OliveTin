@@ -41,7 +41,41 @@ type RebuildActionMapRequest struct {
 	DashboardActionTitles []string
 }
 
+func validateArgumentDefaults(cfg *config.Config) {
+	if cfg == nil {
+		return
+	}
+	for _, action := range cfg.Actions {
+		validateActionArgumentDefaults(action)
+	}
+}
+
+func validateActionArgumentDefaults(action *config.Action) {
+	if action == nil {
+		return
+	}
+	for i := range action.Arguments {
+		validateArgumentDefault(action, &action.Arguments[i])
+	}
+}
+
+func validateArgumentDefault(action *config.Action, arg *config.ActionArgument) {
+	if arg.Default == "" {
+		return
+	}
+	if err := ValidateArgument(arg, arg.Default, action); err != nil {
+		log.WithFields(log.Fields{
+			"actionTitle": action.Title,
+			"argName":     arg.Name,
+			"default":     arg.Default,
+			"error":       err,
+		}).Warn("Argument default value failed validation")
+	}
+}
+
 func (e *Executor) RebuildActionMap() {
+	validateArgumentDefaults(e.Cfg)
+
 	e.MapActionBindingsLock.Lock()
 
 	clear(e.MapActionBindings)
