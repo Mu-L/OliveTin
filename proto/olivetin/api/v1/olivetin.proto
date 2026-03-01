@@ -51,6 +51,7 @@ message GetDashboardResponse {
 message EffectivePolicy {
 	bool show_diagnostics = 1;
 	bool show_log_list = 2;
+	bool show_version_number = 3;
 }
 
 message GetDashboardRequest {
@@ -121,6 +122,7 @@ message StartActionByGetAndWaitResponse {
 message GetLogsRequest{
   int64 start_offset = 1;
   string date_filter = 2; // Optional date filter in YYYY-MM-DD format
+  int64 page_size = 3;   // Number of logs per page (optional; server default used if 0 or unset)
 };
 
 message LogEntry {

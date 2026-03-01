@@ -16,6 +16,7 @@ func (cfg *Config) Sanitize() {
 	cfg.sanitizeAuthRequireGuestsToLogin()
 	cfg.sanitizeLogHistoryPageSize()
 	cfg.sanitizeLocalUserPasswords()
+	cfg.sanitizeSecurityHeaders()
 
 	// log.Infof("cfg %p", cfg)
 
@@ -183,6 +184,25 @@ func (cfg *Config) sanitizeLocalUserPasswords() {
 	}
 }
 
+func (cfg *Config) sanitizeSecurityHeaders() {
+	cfg.sanitizeSecurityHeadersCSP()
+	cfg.sanitizeSecurityHeadersXFrameOptions()
+}
+
+func (cfg *Config) sanitizeSecurityHeadersCSP() {
+	if !cfg.Security.HeaderContentSecurityPolicy || cfg.Security.ContentSecurityPolicy != "" {
+		return
+	}
+	cfg.Security.ContentSecurityPolicy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'"
+}
+
+func (cfg *Config) sanitizeSecurityHeadersXFrameOptions() {
+	if !cfg.Security.HeaderXFrameOptions || cfg.Security.XFrameOptions != "" {
+		return
+	}
+	cfg.Security.XFrameOptions = "DENY"
+}
+
 // parsePasswordTemplate expands {{ .Env.VAR }} in local user password fields using the process environment.
 func parsePasswordTemplate(source string) string {
 	t, err := template.New("password").Option("missingkey=error").Parse(source)
@@ -239,8 +259,7 @@ func (arg *ActionArgument) sanitize() {
 
 	arg.sanitizeNoType()
 
-	// TODO Validate the default against the type checker, but this creates a
-	// import loop
+	// Default value validation runs in executor at config load (validateArgumentDefaults).
 }
 
 func (arg *ActionArgument) sanitizeNoType() {

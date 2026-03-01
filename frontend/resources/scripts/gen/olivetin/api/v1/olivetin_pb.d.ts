@@ -210,6 +210,11 @@ export declare type EffectivePolicy = Message<"olivetin.api.v1.EffectivePolicy">
    * @generated from field: bool show_log_list = 2;
    */
   showLogList: boolean;
+
+  /**
+   * @generated from field: bool show_version_number = 3;
+   */
+  showVersionNumber: boolean;
 };
 
 /**
@@ -495,6 +500,13 @@ export declare type GetLogsRequest = Message<"olivetin.api.v1.GetLogsRequest"> &
    * @generated from field: string date_filter = 2;
    */
   dateFilter: string;
+
+  /**
+   * Number of logs per page (optional; server default used if 0 or unset)
+   *
+   * @generated from field: int64 page_size = 3;
+   */
+  pageSize: bigint;
 };
 
 /**

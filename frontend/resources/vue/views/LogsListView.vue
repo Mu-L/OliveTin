@@ -68,7 +68,7 @@
           </tbody>
         </table>
 
-        <Pagination :pageSize="pageSize" :total="totalCount" :currentPage="currentPage" @page-change="handlePageChange" class = "padding"
+        <Pagination :pageSize="pageSize" :total="totalCount" :currentPage="currentPage" :page="currentPage" @page-change="handlePageChange" class = "padding"
           @page-size-change="handlePageSizeChange" itemTitle="execution logs" />
       </div>
 
@@ -150,6 +150,7 @@ async function fetchLogs() {
 
     const args = {
       "startOffset": BigInt(startOffset),
+      "pageSize": BigInt(pageSize.value),
     }
 
     // Add date filter if selected
@@ -160,7 +161,6 @@ async function fetchLogs() {
     const response = await window.client.getLogs(args)
 
     logs.value = response.logs
-    pageSize.value = Number(response.pageSize) || 0
     totalCount.value = Number(response.totalCount) || 0
   } catch (err) {
     console.error('Failed to fetch logs:', err)

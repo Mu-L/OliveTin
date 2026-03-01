@@ -31,7 +31,7 @@
             <footer title="footer" v-if="showFooter">
                 <p>
                     <img title="application icon" :src="logoUrl" alt="OliveTin logo" style="height: 1em;" class="logo" />
-                    OliveTin {{ currentVersion }}
+                    OliveTin <span v-if="showVersionNumber">{{ currentVersion }}</span>
                 </p>
                 <p>
                     <span>
@@ -52,7 +52,7 @@
 
                     <span>{{ t('connected') }}</span>
                 </p>
-                <p>
+                <p v-if="showVersionNumber">
                     <a id="available-version" href="http://olivetin.app" target="_blank" hidden>?</a>
                 </p>
             </footer>
@@ -68,7 +68,7 @@
                 </option>
             </select>
             <p class="browser-languages">
-                {{ t('language-dialog.browser-languages') }}: 
+                {{ t('language-dialog.browser-languages') }}:
                 <span v-if="browserLanguages.length > 0">{{ browserLanguages.join(', ') }}</span>
                 <span v-else>{{ t('language-dialog.not-available') }}</span>
             </p>
@@ -126,6 +126,7 @@ const showFooter = ref(true)
 const showNavigation = ref(true)
 const showLogs = ref(true)
 const showDiagnostics = ref(true)
+const showVersionNumber = ref(true)
 const showLoginLink = ref(true)
 const sectionNavigationStyle = ref('sidebar')
 
@@ -184,7 +185,7 @@ function normalizeBrowserLanguage() {
     if (navigator.languages && navigator.languages.length > 0) {
         for (const candidate of navigator.languages) {
             const lowerCandidate = candidate.toLowerCase()
-            
+
             // Try exact match (case-insensitive)
             const exact = available.find(locale => locale.toLowerCase() === lowerCandidate)
             if (exact) {
@@ -223,6 +224,7 @@ function updateHeaderFromInit() {
     showNavigation.value = window.initResponse.showNavigation
     showLogs.value = window.initResponse.showLogList
     showDiagnostics.value = window.initResponse.showDiagnostics
+    showVersionNumber.value = window.initResponse.effectivePolicy?.showVersionNumber ?? true
     sectionNavigationStyle.value = window.initResponse.sectionNavigationStyle || 'sidebar'
     availableThemes.value = window.initResponse.availableThemes || []
 
@@ -277,7 +279,7 @@ function renderNavigation() {
 
 function openLanguageDialog() {
     selectedLanguage.value = languagePreference.value
-    
+
     if (typeof navigator !== 'undefined' && Array.isArray(navigator.languages)) {
         browserLanguages.value = navigator.languages
     } else {
@@ -327,7 +329,7 @@ function handleLanguageDialogClick(event) {
 
 function openThemeDialog() {
     selectedTheme.value = themePreference.value || ''
-    
+
     if (themeDialog.value) {
         themeDialog.value.showModal()
     }
@@ -354,7 +356,7 @@ function changeTheme() {
 
 function applyTheme() {
     let themeStyle = document.getElementById('theme-style')
-    
+
     if (!themeStyle) {
         themeStyle = document.createElement('style')
         themeStyle.id = 'theme-style'
@@ -404,10 +406,10 @@ window.updateHeaderFromInit = updateHeaderFromInit
 onMounted(() => {
     serverConnection.value = true;
     updateHeaderFromInit()
-    
+
     // Initialize selected language from stored preference
     selectedLanguage.value = languagePreference.value
-    
+
     // Initialize selected theme from stored preference
     selectedTheme.value = themePreference.value || ''
 

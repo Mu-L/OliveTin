@@ -19,6 +19,8 @@ If you are looking for OliveTin's AI policy, you can find it in `AI.md`.
   - From repo root: `go run ./service`
 - Unit tests (Go):
   - From repo root: `cd service && make unittests`
+- Code style (after editing code in `service/`):
+  - From repo root: `cd service && make codestyle`
 - Integration tests (Mocha + Selenium):
   - Single test: `cd integration-tests && npx --yes mocha test/general.mjs`
   - All tests: `cd integration-tests && npx --yes mocha`
@@ -41,6 +43,7 @@ If you are looking for OliveTin's AI policy, you can find it in `AI.md`.
 - Do not swallow errors; propagate or log meaningfully.
 - Match existing formatting; avoid unrelated reformatting.
 - Be safe around nils in executor steps (e.g., guard `req.Binding` and `req.Binding.Action`).
+- Cyclomatic complexity over 4 is not permitted.
 
 ### API and Execution Flow (High-level)
 1. Client calls Connect RPC (e.g., `Init`, `GetDashboard`, `StartAction`).

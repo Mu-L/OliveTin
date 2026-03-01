@@ -410,11 +410,12 @@ func (x *GetDashboardResponse) GetDashboard() *Dashboard {
 }
 
 type EffectivePolicy struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	ShowDiagnostics bool                   `protobuf:"varint,1,opt,name=show_diagnostics,json=showDiagnostics,proto3" json:"show_diagnostics,omitempty"`
-	ShowLogList     bool                   `protobuf:"varint,2,opt,name=show_log_list,json=showLogList,proto3" json:"show_log_list,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ShowDiagnostics   bool                   `protobuf:"varint,1,opt,name=show_diagnostics,json=showDiagnostics,proto3" json:"show_diagnostics,omitempty"`
+	ShowLogList       bool                   `protobuf:"varint,2,opt,name=show_log_list,json=showLogList,proto3" json:"show_log_list,omitempty"`
+	ShowVersionNumber bool                   `protobuf:"varint,3,opt,name=show_version_number,json=showVersionNumber,proto3" json:"show_version_number,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *EffectivePolicy) Reset() {
@@ -457,6 +458,13 @@ func (x *EffectivePolicy) GetShowDiagnostics() bool {
 func (x *EffectivePolicy) GetShowLogList() bool {
 	if x != nil {
 		return x.ShowLogList
+	}
+	return false
+}
+
+func (x *EffectivePolicy) GetShowVersionNumber() bool {
+	if x != nil {
+		return x.ShowVersionNumber
 	}
 	return false
 }
@@ -1105,6 +1113,7 @@ type GetLogsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StartOffset   int64                  `protobuf:"varint,1,opt,name=start_offset,json=startOffset,proto3" json:"start_offset,omitempty"`
 	DateFilter    string                 `protobuf:"bytes,2,opt,name=date_filter,json=dateFilter,proto3" json:"date_filter,omitempty"` // Optional date filter in YYYY-MM-DD format
+	PageSize      int64                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`      // Number of logs per page (optional; server default used if 0 or unset)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1151,6 +1160,13 @@ func (x *GetLogsRequest) GetDateFilter() string {
 		return x.DateFilter
 	}
 	return ""
+}
+
+func (x *GetLogsRequest) GetPageSize() int64 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
 }
 
 type LogEntry struct {
@@ -3926,10 +3942,11 @@ const file_olivetin_api_v1_olivetin_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"f\n" +
 	"\x14GetDashboardResponse\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x128\n" +
-	"\tdashboard\x18\x04 \x01(\v2\x1a.olivetin.api.v1.DashboardR\tdashboard\"`\n" +
+	"\tdashboard\x18\x04 \x01(\v2\x1a.olivetin.api.v1.DashboardR\tdashboard\"\x90\x01\n" +
 	"\x0fEffectivePolicy\x12)\n" +
 	"\x10show_diagnostics\x18\x01 \x01(\bR\x0fshowDiagnostics\x12\"\n" +
-	"\rshow_log_list\x18\x02 \x01(\bR\vshowLogList\"k\n" +
+	"\rshow_log_list\x18\x02 \x01(\bR\vshowLogList\x12.\n" +
+	"\x13show_version_number\x18\x03 \x01(\bR\x11showVersionNumber\"k\n" +
 	"\x13GetDashboardRequest\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12\x1f\n" +
 	"\ventity_type\x18\x02 \x01(\tR\n" +
@@ -3972,11 +3989,12 @@ const file_olivetin_api_v1_olivetin_proto_rawDesc = "" +
 	"\x1eStartActionByGetAndWaitRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\"Y\n" +
 	"\x1fStartActionByGetAndWaitResponse\x126\n" +
-	"\tlog_entry\x18\x01 \x01(\v2\x19.olivetin.api.v1.LogEntryR\blogEntry\"T\n" +
+	"\tlog_entry\x18\x01 \x01(\v2\x19.olivetin.api.v1.LogEntryR\blogEntry\"q\n" +
 	"\x0eGetLogsRequest\x12!\n" +
 	"\fstart_offset\x18\x01 \x01(\x03R\vstartOffset\x12\x1f\n" +
 	"\vdate_filter\x18\x02 \x01(\tR\n" +
-	"dateFilter\"\x89\x05\n" +
+	"dateFilter\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x03R\bpageSize\"\x89\x05\n" +
 	"\bLogEntry\x12)\n" +
 	"\x10datetime_started\x18\x01 \x01(\tR\x0fdatetimeStarted\x12!\n" +
 	"\faction_title\x18\x02 \x01(\tR\vactionTitle\x12\x16\n" +
