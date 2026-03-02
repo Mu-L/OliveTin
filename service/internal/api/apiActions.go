@@ -55,8 +55,9 @@ func matchesEntity(binding *executor.ActionBinding, entity *entities.Entity) boo
 
 func buildEffectivePolicy(policy *config.ConfigurationPolicy) *apiv1.EffectivePolicy {
 	ret := &apiv1.EffectivePolicy{
-		ShowDiagnostics: policy.ShowDiagnostics,
-		ShowLogList:     policy.ShowLogList,
+		ShowDiagnostics:   policy.ShowDiagnostics,
+		ShowLogList:       policy.ShowLogList,
+		ShowVersionNumber: policy.ShowVersionNumber,
 	}
 
 	return ret

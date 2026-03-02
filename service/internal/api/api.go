@@ -710,7 +710,9 @@ func (api *oliveTinAPI) WhoAmI(ctx ctx.Context, req *connect.Request[apiv1.WhoAm
 }
 
 func (api *oliveTinAPI) SosReport(ctx ctx.Context, req *connect.Request[apiv1.SosReportRequest]) (*connect.Response[apiv1.SosReportResponse], error) {
-	sos := installationinfo.GetSosReport()
+	user := auth.UserFromApiCall(ctx, req, api.cfg)
+	redactVersion := !user.EffectivePolicy.ShowVersionNumber
+	sos := installationinfo.GetSosReport(redactVersion)
 
 	if !api.cfg.InsecureAllowDumpSos {
 		log.Info(sos)
@@ -914,12 +916,19 @@ func (api *oliveTinAPI) Init(ctx ctx.Context, req *connect.Request[apiv1.InitReq
 
 	loginRequired := user.IsGuest() && api.cfg.AuthRequireGuestsToLogin
 
+	showVersion := user.EffectivePolicy.ShowVersionNumber
+	currentVersion := ""
+	availableVersion := ""
+	if showVersion {
+		currentVersion = installationinfo.Build.Version
+		availableVersion = installationinfo.Runtime.AvailableVersion
+	}
 	res := &apiv1.InitResponse{
 		ShowFooter:                api.cfg.ShowFooter,
 		ShowNavigation:            api.cfg.ShowNavigation,
-		ShowNewVersions:           api.cfg.ShowNewVersions,
-		AvailableVersion:          installationinfo.Runtime.AvailableVersion,
-		CurrentVersion:            installationinfo.Build.Version,
+		ShowNewVersions:           showVersion && api.cfg.ShowNewVersions,
+		AvailableVersion:          availableVersion,
+		CurrentVersion:            currentVersion,
 		PageTitle:                 api.cfg.PageTitle,
 		SectionNavigationStyle:    api.cfg.SectionNavigationStyle,
 		DefaultIconForBack:        api.cfg.DefaultIconForBack,
