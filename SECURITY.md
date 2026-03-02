@@ -31,6 +31,12 @@ Please use responsible disclosure practices when reporting a vulnerability. **Yo
 
 * **Option B**: Please email `contact@jread.com` for responsible disclosure. 
 
+The following notes might be helpful when reporting a vulnerability:
+
+* OliveTin does not offer a bug bounty program.
+* GitHub usernames are how we you will be credited for discoveries reported via GitHub, if using emails we'll ask for your preferred name/handle to credit you with.
+* CVEs will be requested via GitHub Security Advisories when appropriate, but we do not guarantee that all vulnerabilities will receive CVEs, as this is determined on a case-by-case basis.
+
 ## Disclosure of how vulnerabilities were found
 
 It is incredibly useful to not just patch security vulnerabilities, but also to understand how they were found. If you are able to share this information, it can help us and the community to better understand potential attack vectors and improve the overall security of the project.
